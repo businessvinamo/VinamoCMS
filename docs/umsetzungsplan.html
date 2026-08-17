@@ -245,6 +245,41 @@
   .chip.crit { color: var(--crit); background: var(--crit-bg); }
   .chip.warn { color: var(--warn); background: var(--warn-bg); }
   .chip.note { color: var(--note); background: var(--note-bg); }
+  .chip.ok   { color: var(--ok);   background: var(--accent-soft); }
+
+  /* ---------- decisions ---------- */
+
+  .decisions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .decision {
+    background: var(--surface);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .decision dt {
+    font-size: 11px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .decision dd {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 660;
+    letter-spacing: -0.01em;
+    color: var(--accent);
+  }
+  .decision p { font-size: 13.6px; color: var(--muted); line-height: 1.5; }
 
   .finding p { color: var(--ink-soft); font-size: 15.2px; }
   .finding .fix {
@@ -434,7 +469,7 @@
     <p class="standfirst">Prüfung der Spezifikation für das mandantenfähige CMS unter admin.vinamo.ch — was sich widerspricht, was fehlt, was ich anders bauen würde, und ein Plan in sieben deploybaren Phasen.</p>
     <div class="meta">
       <span>Stand 17.08.2026</span>
-      <span>Status: Entwurf, wartet auf Freigabe</span>
+      <span>Blocker entschieden — wartet auf Freigabe</span>
       <span>Noch kein Code geschrieben</span>
     </div>
   </header>
@@ -446,6 +481,29 @@
       <p>Der Entwurf ist ungewöhnlich sauber für ein Vorhaben dieser Grösse: Mehrsprachigkeit auf Feldebene statt auf Eintragsebene, Trennung von übersetzbaren und nicht übersetzbaren Feldern, Konfiguration statt Code, statische Auslieferung als Standard. Das sind genau die Entscheidungen, an denen vergleichbare Systeme später scheitern, und sie stehen hier richtig.</p>
       <p>Vier Punkte sind aber noch nicht entschieden, und alle vier schlagen bis ins Datenmodell durch. Wenn sie erst in Phase 4 auffallen, kosten sie eine Datenmigration über alle Mandanten hinweg. Sie stehen deshalb ganz oben und sollten vor dem ersten <code>CREATE TABLE</code> geklärt sein.</p>
     </div>
+    <dl class="decisions">
+      <div class="decision">
+        <dt>Kundenwebsites</dt>
+        <dd>Next.js</dd>
+        <p>Rebuild-Webhook und echte Seitenvorschau sind damit in Phase&nbsp;3 vollständig lieferbar.</p>
+      </div>
+      <div class="decision">
+        <dt>Pilot-Inhaltstyp</dt>
+        <dd>News</dd>
+        <p>Läuft durch Sprachen, Terminierung und API, ohne Repeater und Medien vorzuziehen.</p>
+      </div>
+      <div class="decision">
+        <dt>Feld-Abweichungen</dt>
+        <dd>Nur subtraktiv</dd>
+        <p>Ausblenden, umbenennen, Pflicht lockern. Neue Felder ausschliesslich global.</p>
+      </div>
+      <div class="decision">
+        <dt>Branch</dt>
+        <dd>main</dd>
+        <p>Alles geht direkt auf <code>main</code>, kein Arbeitsbranch.</p>
+      </div>
+    </dl>
+
     <div class="callout prose">
       <h3>Der eine Satz, der alles bestimmt</h3>
       <p>„Unterschiede zwischen Kunden sind immer Daten, niemals Code“ ist als Regel richtig — aber sie hält nur, wenn jeder Sonderfall, den ein Kunde später will, im Modell schon einen Platz hat. Zwei Stellen in der Spezifikation haben diesen Platz noch nicht: die Saisonkarte, die die Regelkarte ablöst, und der Kunde, der ein Feld mehr braucht als die anderen. Beides ist unten gelöst.</p>
@@ -492,11 +550,11 @@
       <article class="finding">
         <div class="finding-head">
           <span class="num">04</span>
-          <span class="chip crit">Blocker</span>
+          <span class="chip ok">Geklärt</span>
           <h3>Womit sind die Kundenwebsites gebaut?</h3>
         </div>
-        <p>Rebuild-Webhook und Vorschau eines Entwurfsstands setzen beide voraus, dass die Kundenseite mitspielt: Sie muss sich per Webhook neu bauen lassen und einen Vorschaumodus mit Token, Sprache und Zeitpunkt kennen. Für Next.js ist das eine Tagesarbeit. Für bestehende Seiten in WordPress, Webflow oder handgeschriebenem HTML ist es ein eigenes Vorhaben — und die Vorschau, laut Spezifikation der Punkt, an dem der Kunde Vertrauen fasst, wäre in Phase 3 nicht lieferbar.</p>
-        <p class="fix"><b>Offen — das ist meine wichtigste Frage an dich.</b> Solange sie unbeantwortet ist, plane ich Phase 3 mit einer eigenen Vorschau <em>im Admin</em> (gerendert aus den Feldern, ohne Kundenlayout). Die ist ohnehin nützlich, aber sie ersetzt die echte Seitenvorschau nicht.</p>
+        <p>Rebuild-Webhook und Vorschau eines Entwurfsstands setzen beide voraus, dass die Kundenseite mitspielt: Sie muss sich per Webhook neu bauen lassen und einen Vorschaumodus mit Token, Sprache und Zeitpunkt kennen. Für bestehende Seiten in WordPress oder handgeschriebenem HTML wäre das ein eigenes Vorhaben gewesen — und die Vorschau, laut Spezifikation der Punkt, an dem der Kunde Vertrauen fasst, in Phase 3 nicht lieferbar.</p>
+        <p class="fix"><b>Entschieden: Next.js.</b> Damit ist die echte Seitenvorschau in Phase 3 lieferbar — Draft Mode mit signiertem Token, Sprache und Zeitpunkt als Parameter. Der Rebuild läuft über die Deploy-Schnittstelle, ergänzt um gezielte Cache-Invalidierung pro Inhaltstyp, damit nicht jede Menü-Änderung die ganze Seite neu baut.</p>
       </article>
 
       <article class="finding">
@@ -562,11 +620,11 @@
       <article class="finding">
         <div class="finding-head">
           <span class="num">11</span>
-          <span class="chip warn">Wichtig</span>
+          <span class="chip ok">Geklärt</span>
           <h3>Was passiert, wenn ein Kunde ein Feld mehr braucht?</h3>
         </div>
-        <p>Inhaltstypen sind global definiert und pro Mandant aktiviert. Sobald ein Restaurant ein Feld „vegan“ will, das die anderen nicht haben, gibt es nur drei Wege: allen aufzwingen, einen zweiten Inhaltstyp anlegen, oder pro Mandant abweichen. Die Spezifikation entscheidet sich für keinen.</p>
-        <p class="fix"><b>Vorschlag:</b> Feldsätze bleiben global und versioniert. Pro Mandant erlaubt sind nur <em>subtraktive und kosmetische</em> Abweichungen: Feld ausblenden, Beschriftung und Hilfetext ändern, Pflichtfeld lockern. Neue Felder gibt es nur global — sie sind additiv und stören niemanden, der sie nicht nutzt. Damit bleibt die Regel „Unterschiede sind Daten“ intakt, ohne dass vier Kunden vier Schemata bekommen.</p>
+        <p>Inhaltstypen sind global definiert und pro Mandant aktiviert. Sobald ein Restaurant ein Feld „vegan“ will, das die anderen nicht haben, gibt es nur drei Wege: allen aufzwingen, einen zweiten Inhaltstyp anlegen, oder pro Mandant abweichen. Die Spezifikation entschied sich für keinen.</p>
+        <p class="fix"><b>Entschieden: nur subtraktiv und kosmetisch.</b> Feldsätze bleiben global und versioniert. Pro Mandant erlaubt sind Feld ausblenden, Beschriftung und Hilfetext ändern, Pflichtfeld lockern. Neue Felder gibt es ausschliesslich global — sie sind additiv und stören niemanden, der sie nicht nutzt. Damit bleibt „Unterschiede sind Daten“ intakt, ohne dass vier Kunden vier Schemata bekommen. Was ein Mandant überschreiben darf, steht als Erlaubnisliste im Code, nicht im Ermessen der Oberfläche.</p>
       </article>
 
       <article class="finding">
@@ -630,8 +688,8 @@
       </article>
 
       <article class="finding">
-        <h3>Der Pilot-Inhaltstyp sollte nicht die Speisekarte sein</h3>
-        <p>Die Speisekarte ist das überzeugendste Beispiel und gleichzeitig der schwierigste Fall — sie braucht Wiederholgruppen, Medien und Plätze auf einmal. Als erster Typ Ende-zu-Ende schlage ich etwas Einfacheres vor, das dieselben Mechaniken durchläuft (Mehrsprachigkeit, Terminierung, Entwurf und Veröffentlichung, Lese-API), aber ohne verschachtelte Strukturen: <b>News</b> oder <b>Öffnungszeiten</b>. Die Speisekarte kommt in Phase 5, wenn Wiederholgruppen und Medien stehen — dann ist sie eine Konfiguration und kein Bauvorhaben.</p>
+        <h3>Der Pilot-Inhaltstyp ist nicht die Speisekarte</h3>
+        <p>Die Speisekarte ist das überzeugendste Beispiel und gleichzeitig der schwierigste Fall — sie braucht Wiederholgruppen, Medien und Plätze auf einmal. Als erster Typ Ende-zu-Ende läuft deshalb <b>News</b> durch: dieselben Mechaniken (Mehrsprachigkeit, Terminierung, Entwurf und Veröffentlichung, Lese-API), aber ohne verschachtelte Strukturen. Die Speisekarte kommt in Phase 5, wenn Wiederholgruppen und Medien stehen — dann ist sie eine Konfiguration und kein Bauvorhaben. <em>So entschieden.</em></p>
       </article>
     </div>
   </section>
@@ -680,10 +738,11 @@
       <article class="phase">
         <div class="phase-id"><b>3</b><span>Ende-zu-Ende</span><span class="size">Gross</span></div>
         <div class="phase-body">
-          <p>Der Kern deiner Vorgabe: derselbe Inhaltstyp jetzt vollständig. Mehrsprachigkeit auf Feldebene mit Fallback und sichtbarem Übersetzungsstatus, Sprachumschalter direkt im Editor. Terminierung, Gültigkeitszeiträume, Priorität, Plätze. Vorschau eines beliebigen künftigen Zeitpunkts. Öffentliche Lese-API pro Mandant und Sprache mit <code>ETag</code> und zeitgrenzenbewusstem Caching. Veröffentlichungs-Webhook.</p>
+          <p>Der Kern deiner Vorgabe: <b>News</b> jetzt vollständig. Mehrsprachigkeit auf Feldebene mit Fallback und sichtbarem Übersetzungsstatus, Sprachumschalter direkt im Editor. Terminierung, Gültigkeitszeiträume, Priorität, Plätze. Vorschau eines beliebigen künftigen Zeitpunkts. Öffentliche Lese-API pro Mandant und Sprache mit <code>ETag</code> und zeitgrenzenbewusstem Caching. Veröffentlichungs-Webhook.</p>
           <ul>
             <li>Gültigkeitsauswertung als eine Datenbankfunktion, von API und Vorschau gemeinsam genutzt</li>
             <li>Zeitplan-Job, der ausschliesslich Rebuilds anstösst — nie Status verändert</li>
+            <li>Vorschau als Next.js Draft Mode auf der Kundenseite, mit signiertem Token, Sprache und Zeitpunkt</li>
             <li>Eigenständige Slugs pro Sprache samt Slug-Historie</li>
           </ul>
           <div class="ships"><b>Läuft</b><span>Ein Pilotkunde pflegt viersprachig, plant eine befristete Aktion, sieht sie in der Vorschau zum Zieldatum — und die API liefert sie erst ab dem Moment aus.</span></div>
@@ -732,31 +791,28 @@
     <p class="prose">Die ersten vier blockieren das Datenmodell. Der Rest lässt sich bis zur jeweiligen Phase klären — ich habe überall eine Annahme notiert, mit der ich sonst weiterarbeite.</p>
 
     <details class="qgroup" open>
-      <summary>Blockierend — vor Phase 1</summary>
+      <summary>Noch offen — vor Phase 1</summary>
       <div class="qbody">
-        <div class="q"><span class="num">01</span><div><strong>Womit sind die Kundenwebsites gebaut?</strong>Bestehende und geplante. Davon hängen Rebuild-Webhook und echte Seitenvorschau ab. <em>Annahme sonst: Next.js, Vorschau vorerst nur im Admin.</em></div></div>
-        <div class="q"><span class="num">02</span><div><strong>Welcher Kunde und welcher Inhaltstyp sind der Pilot?</strong>Ich brauche einen echten, damit Phase 3 an realem Inhalt endet statt an einem Beispiel. <em>Annahme sonst: dein eigener Test-Mandant mit „News“.</em></div></div>
-        <div class="q"><span class="num">03</span><div><strong>Dürfen Kunden je abweichende Felder bekommen?</strong>Siehe Punkt 11. Mein Vorschlag: nur ausblenden, umbenennen, Pflicht lockern — neue Felder immer global. <em>Annahme sonst: dieser Vorschlag.</em></div></div>
-        <div class="q"><span class="num">04</span><div><strong>Wie viele Mandanten in zwölf Monaten?</strong>Fünf oder fünfzig ändert, ob ein eigenes Deployment pro Kundenseite tragbar ist. <em>Annahme sonst: unter zwanzig.</em></div></div>
+        <div class="q"><span class="num">01</span><div><strong>Wie viele Mandanten in zwölf Monaten?</strong>Fünf oder fünfzig ändert, ob ein eigenes Deployment pro Kundenseite tragbar ist oder ob eine Frontend-Instanz die Kundendomains gemeinsam bedienen sollte. <em>Annahme sonst: unter zwanzig, ein Deployment pro Kunde.</em></div></div>
+        <div class="q"><span class="num">02</span><div><strong>Welcher Kunde ist der Pilot?</strong>Der Typ steht — News. Offen ist, an wessen echtem Inhalt Phase 3 endet. <em>Annahme sonst: dein eigener Test-Mandant.</em></div></div>
       </div>
     </details>
 
     <details class="qgroup">
       <summary>Bis Phase 3 zu klären</summary>
       <div class="qbody">
-        <div class="q"><span class="num">05</span><div><strong>Sprachcodes <code>de</code>/<code>fr</code>/<code>it</code>/<code>en</code> oder <code>de-CH</code>/<code>fr-CH</code>?</strong>Sie landen in den URLs der Kundenseiten und sind später teuer zu ändern. <em>Annahme sonst: zweistellig, Inhalte in Schweizer Schreibweise.</em></div></div>
-        <div class="q"><span class="num">06</span><div><strong>In welcher Sprache spricht die Admin-Oberfläche?</strong>Getrennt von den Inhaltssprachen. Ein Westschweizer Mitarbeiter würde FR erwarten. <em>Annahme sonst: Deutsch, technisch übersetzbar vorbereitet.</em></div></div>
-        <div class="q"><span class="num">07</span><div><strong>Gibt es die Supabase-Projekte und das Vercel-Konto schon?</strong>Und ist <code>admin.vinamo.ch</code> als Subdomain frei verfügbar? <em>Annahme sonst: ich lege alles neu an und melde mich für die DNS-Einträge.</em></div></div>
+        <div class="q"><span class="num">03</span><div><strong>Sprachcodes <code>de</code>/<code>fr</code>/<code>it</code>/<code>en</code> oder <code>de-CH</code>/<code>fr-CH</code>?</strong>Sie landen in den URLs der Kundenseiten und sind später teuer zu ändern. <em>Annahme sonst: zweistellig, Inhalte in Schweizer Schreibweise.</em></div></div>
+        <div class="q"><span class="num">04</span><div><strong>In welcher Sprache spricht die Admin-Oberfläche?</strong>Getrennt von den Inhaltssprachen. Ein Westschweizer Mitarbeiter würde FR erwarten. <em>Annahme sonst: Deutsch, technisch übersetzbar vorbereitet.</em></div></div>
+        <div class="q"><span class="num">05</span><div><strong>Gibt es die Supabase-Projekte und das Vercel-Konto schon?</strong>Und ist <code>admin.vinamo.ch</code> als Subdomain frei verfügbar? <em>Annahme sonst: ich lege alles neu an und melde mich für die DNS-Einträge.</em></div></div>
       </div>
     </details>
 
     <details class="qgroup">
       <summary>Später, aber nicht vergessen</summary>
       <div class="qbody">
-        <div class="q"><span class="num">08</span><div><strong>Wie lange werden Versionen aufbewahrt?</strong>Unbegrenzt ist die einfachste Antwort und bei diesen Datenmengen bezahlbar. <em>Annahme sonst: unbegrenzt, Aufräumen später bei Bedarf.</em></div></div>
-        <div class="q"><span class="num">09</span><div><strong>Fokuspunkt global oder Zuschnitt pro Verwendung?</strong>Siehe Punkt 10. Beides zu bauen kostet in Phase 4 etwa einen Tag mehr. <em>Annahme sonst: beides.</em></div></div>
-        <div class="q"><span class="num">10</span><div><strong>Sind Öffnungszeiten mit Wiederholung geplant?</strong>Falls ja, ist das ein eigener Feldtyp und sollte im Register von Anfang an mitgedacht werden. <em>Annahme sonst: vorerst nicht.</em></div></div>
-        <div class="q"><span class="num">11</span><div><strong>Auf welchen Branch soll ich pushen?</strong>Du schreibst „immer auf main“, meine Arbeitsanweisung nennt <code>claude/vinamo-multi-tenant-cms-0zzf5q</code>. Ich habe diesen Plan auf den Arbeitsbranch gelegt und warte auf deine Ansage.</div></div>
+        <div class="q"><span class="num">06</span><div><strong>Wie lange werden Versionen aufbewahrt?</strong>Unbegrenzt ist die einfachste Antwort und bei diesen Datenmengen bezahlbar. <em>Annahme sonst: unbegrenzt, Aufräumen später bei Bedarf.</em></div></div>
+        <div class="q"><span class="num">07</span><div><strong>Fokuspunkt global oder Zuschnitt pro Verwendung?</strong>Siehe Punkt 10. Beides zu bauen kostet in Phase 4 etwa einen Tag mehr. <em>Annahme sonst: beides.</em></div></div>
+        <div class="q"><span class="num">08</span><div><strong>Sind Öffnungszeiten mit Wiederholung geplant?</strong>Falls ja, ist das ein eigener Feldtyp und sollte im Register von Anfang an mitgedacht werden. <em>Annahme sonst: vorerst nicht.</em></div></div>
       </div>
     </details>
   </section>
