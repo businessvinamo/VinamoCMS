@@ -1,0 +1,127 @@
+/* Vinamo Marken-Tokens. Quelle: brand/README.txt */
+:root {
+  --violett: #5B3DF5;
+  --violett-hell: #EDE9FE;
+  --navy: #1B1B33;
+  --papier: #FBFAF9;
+
+  --grund: var(--papier);
+  --flaeche: #FFFFFF;
+  --flaeche-alt: #F4F2F8;
+  --text: var(--navy);
+  --text-leise: #55516E;
+  --linie: #E3E0EC;
+  --gut: #146B54;
+  --warn: #8A5406;
+
+  --radius: 8px;
+  --touch: 48px; /* Mindestgrösse für Touch-Ziele, mobile-first */
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--grund);
+  color: var(--text);
+  font-family: var(--font-text), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { margin: 0; line-height: 1.2; letter-spacing: -0.015em; }
+h1 { font-size: 26px; font-weight: 800; }
+h2 { font-size: 19px; font-weight: 700; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; }
+
+a { color: var(--violett); }
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--violett);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.huelle { max-width: 720px; margin: 0 auto; padding: 24px 20px 64px; }
+.stapel { display: flex; flex-direction: column; gap: 16px; }
+.stapel-eng { display: flex; flex-direction: column; gap: 8px; }
+
+.marke { display: flex; align-items: center; gap: 10px; padding: 20px 0; }
+.marke span {
+  font-size: 12px; letter-spacing: 0.26em; text-transform: uppercase;
+  color: var(--text-leise); font-weight: 600;
+}
+
+.karte {
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.karte-klick {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  min-height: var(--touch);
+  text-decoration: none; color: inherit;
+}
+.karte-klick:hover { border-color: var(--violett); }
+
+.leise { color: var(--text-leise); font-size: 14px; }
+.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
+
+.marke-rolle {
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+  padding: 3px 9px; border-radius: 100px;
+  background: var(--violett-hell); color: var(--violett);
+  white-space: nowrap;
+}
+.marke-rolle.admin { background: var(--navy); color: #fff; }
+
+label { font-weight: 600; font-size: 15px; }
+
+input[type="email"] {
+  width: 100%; min-height: var(--touch);
+  padding: 12px 14px; font-size: 16px; /* 16px verhindert Zoom beim Fokus auf iOS */
+  border: 1px solid var(--linie); border-radius: var(--radius);
+  background: var(--flaeche); color: var(--text);
+}
+
+button {
+  min-height: var(--touch);
+  padding: 12px 20px;
+  font-size: 16px; font-weight: 650;
+  font-family: inherit;
+  background: var(--violett); color: #fff;
+  border: none; border-radius: var(--radius);
+  cursor: pointer;
+}
+button:hover { background: #4A2FE0; }
+
+.hinweis { border-radius: var(--radius); padding: 14px 16px; font-size: 15px; }
+.hinweis.gut { background: #E7F4EF; color: var(--gut); }
+.hinweis.warn { background: #FAF0DF; color: var(--warn); }
+
+.liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.zeile { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 0; }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --grund: #131327;
+    --flaeche: #1B1B33;
+    --flaeche-alt: #232342;
+    --text: #ECEAF6;
+    --text-leise: #9995B4;
+    --linie: #32314F;
+    --violett: #9583FF;
+    --violett-hell: #2A2551;
+    --gut: #64C8AA;
+    --warn: #E5B25C;
+  }
+  .hinweis.gut { background: #17302A; }
+  .hinweis.warn { background: #362A16; }
+  .marke-rolle.admin { background: #ECEAF6; color: #131327; }
+  button { color: #131327; }
+}
