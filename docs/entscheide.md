@@ -351,3 +351,57 @@ verifiziert, dass der Datenbankzustand stimmt — und daraus geschlossen, dass d
 Anmeldung funktioniert. Das ist zweierlei. Das Skript meldet deshalb nicht
 „angelegt", sondern meldet erst, nachdem es sich mit dem erzeugten Passwort
 tatsächlich angemeldet hat.
+
+---
+
+## 19 · API-Routen gehören nicht hinter die Middleware
+
+Gefunden beim Bauen von `/api/diagnose`: Die Route antwortete mit `307` auf
+`/login` statt mit ihrer Auskunft.
+
+Der Matcher der Middleware schloss `/api` nicht aus. Damit beantwortete sie
+**jede** unangemeldete Anfrage mit einer Weiterleitung — auch die, die gar nicht
+angemeldet sein sollen:
+
+| Route | Folge |
+| --- | --- |
+| `/api/v1/…` | Die öffentliche Lese-API. Jede Kundenwebsite hätte beim Bauen HTML statt JSON bekommen. Das ist der Zweck des ganzen Systems. |
+| `/api/cron` | Kommt mit einem Bearer-Token, nicht mit einem Cookie. Terminierte Inhalte wären nie ausgeliefert worden. |
+| `/api/media`, `/api/export` | Tot, obwohl beide ihre Anmeldung selbst prüfen. |
+| `/api/diagnose` | Soll gerade dann erreichbar sein, wenn die Anmeldung klemmt. |
+
+Der Ausschluss ist kein Loch. `/api/media` und `/api/export` prüfen mit
+`getUser()`, `/api/cron` prüft `CRON_SECRET`, und hinter allem steht Row Level
+Security. Die Middleware war dort nie die Grenze, nur eine Bequemlichkeit für
+Seitenaufrufe — genau so steht es auch im Kommentar in
+`src/lib/supabase/middleware.ts`.
+
+**Warum das so lange unbemerkt blieb:** Build und Typecheck sind grün, die
+Anmeldung funktioniert, das Admin funktioniert. Kaputt war nur, was von aussen
+kommt — und das hatte bis dahin niemand von aussen aufgerufen. Ein grüner Build
+sagt nichts über Routen, die niemand abruft.
+
+---
+
+## 20 · Fehlergrenzen und eine Selbstauskunft der Umgebung
+
+Anlass: eine Meldung „Application error: a client-side exception has occurred"
+auf dem Deployment, die weder dem Kunden noch uns etwas sagt.
+
+Neu:
+
+- `src/app/error.tsx` und `global-error.tsx` — nennen die Fehlerkennung, die
+  auch im Serverprotokoll steht, sodass sich die zwei Enden verbinden lassen.
+  `global-error.tsx` trägt seine Stile inline, weil es greift, wenn schon das
+  Wurzel-Layout gescheitert ist und es weder CSS noch Schriften gibt.
+- `/api/diagnose` — beantwortet ohne Zugriff auf die Serverprotokolle des
+  Hosters die Frage „warum geht es auf dem Server nicht, aber lokal schon".
+  Gibt zurück, welche Umgebungsvariablen gesetzt sind und ob Supabase erreichbar
+  ist.
+
+Ausschliesslich **ob** eine Variable gesetzt ist, nie ihr Wert und nie ein
+Ausschnitt davon. Dass jemand erfährt, ob ein Schlüssel konfiguriert ist, ist
+ungefährlich; der Schlüssel selbst wäre es nicht.
+
+Dazu antworten Lese-API und Cron bei fehlender Konfiguration mit `503` und
+Klartext statt mit einem nackten `500`.

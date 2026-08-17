@@ -49,7 +49,21 @@ export async function GET(
     return NextResponse.json({ error: 'Ungültiger Zeitpunkt in "at".' }, { status: 400 })
   }
 
-  const { data, error } = await adminClient().rpc('public_content', {
+  // Fehlt die Serverkonfiguration, wirft adminClient(). Ohne diesen Fang wird
+  // daraus ein nackter HTTP 500 -- und die Kundenwebsite, die hier baut, meldet
+  // nur "Fehler". Ein 503 mit Klartext spart die Suche im Serverprotokoll.
+  let admin
+  try {
+    admin = adminClient()
+  } catch (e) {
+    console.error('[api] Konfiguration unvollstaendig', e instanceof Error ? e.message : e)
+    return NextResponse.json(
+      { error: 'Dieser Server ist nicht vollständig konfiguriert. Siehe /api/diagnose.' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
+    )
+  }
+
+  const { data, error } = await admin.rpc('public_content', {
     p_tenant_slug: tenant,
     p_type_key: type,
     p_locale: locale,

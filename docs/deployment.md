@@ -86,6 +86,21 @@ als Redirect URL. Sonst führen die Magic Links ins Leere.
 
 ---
 
+## Läuft es? — `/api/diagnose`
+
+```
+https://admin.vinamo.ch/api/diagnose
+```
+
+Sagt ohne Blick ins Serverprotokoll, welche Umgebungsvariablen gesetzt sind und
+ob Supabase erreichbar ist. Erste Anlaufstelle, wenn das Admin sich seltsam
+verhält. Antwortet `200`, wenn die Anmeldung funktionieren sollte, sonst `503`
+mit der Liste der fehlenden Werte.
+
+Gibt nur zurück, **ob** ein Wert gesetzt ist — nie den Wert selbst.
+
+---
+
 ## Ersten Zugang einrichten
 
 Es gibt keine Selbstregistrierung. Der erste Benutzer jeder Umgebung braucht

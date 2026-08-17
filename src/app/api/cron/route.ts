@@ -30,7 +30,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Nicht berechtigt.' }, { status: 401 })
   }
 
-  const admin = adminClient()
+  let admin
+  try {
+    admin = adminClient()
+  } catch (e) {
+    console.error('[cron] Konfiguration unvollstaendig', e instanceof Error ? e.message : e)
+    return NextResponse.json(
+      { error: 'Server nicht vollständig konfiguriert. Siehe /api/diagnose.' },
+      { status: 503 },
+    )
+  }
+
   const jetzt = new Date()
   // Fenster grosszügig, weil ein verpasster Lauf sonst eine Zeitgrenze
   // überspringt. Mehrfach angestossene Rebuilds sind harmlos.
