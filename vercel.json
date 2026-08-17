@@ -1,0 +1,9 @@
+{
+  "crons": [
+    { "path": "/api/cron", "schedule": "* * * * *" }
+  ],
+  "functions": {
+    "src/app/**": { "maxDuration": 30 }
+  },
+  "regions": ["fra1"]
+}

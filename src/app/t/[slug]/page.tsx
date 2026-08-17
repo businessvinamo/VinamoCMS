@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Marke } from '@/components/Marke'
 import { createClient } from '@/lib/supabase/server'
 import { isPlatformAdmin, requireTenant, requireUser } from '@/lib/tenant'
+import { ladeInhaltstypen } from '@/lib/content'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,9 +29,10 @@ export default async function MandantSeite({
   const istAdmin = await isPlatformAdmin()
   const supabase = await createClient()
 
-  const [{ data: mitglieder }, { data: schalter }] = await Promise.all([
+  const [{ data: mitglieder }, { data: schalter }, typen] = await Promise.all([
     supabase.from('tenant_members').select('user_id, role, created_at').eq('tenant_id', tenant.id),
     supabase.from('tenant_feature_flags').select('flag_key, enabled').eq('tenant_id', tenant.id),
+    ladeInhaltstypen(tenant.id),
   ])
 
   const aktiv = (schalter ?? []).filter((s) => s.enabled).map((s) => s.flag_key)
@@ -91,6 +93,15 @@ export default async function MandantSeite({
         </div>
 
         <div className="karte">
+          <h2>Protokoll</h2>
+          <p className="leise">
+            Wer wann was veröffentlicht hat — und ob die Website danach
+            aktualisiert wurde.
+          </p>
+          <Link href={`/t/${tenant.slug}/protokoll`}>Protokoll ansehen</Link>
+        </div>
+
+        <div className="karte">
           <h2>Freigeschaltet</h2>
           {aktiv.length === 0 ? (
             <p className="leise">
@@ -105,13 +116,27 @@ export default async function MandantSeite({
           )}
         </div>
 
-        <div className="karte">
+        <div className="stapel-eng">
           <h2>Inhalte pflegen</h2>
-          <p className="leise">
-            Kommt in Phase 2. Dann stehen hier die Inhaltstypen dieser Website —
-            und du kannst sie bearbeiten, in allen Sprachen, mit Entwurf und
-            bewusster Veröffentlichung.
-          </p>
+          {typen.length === 0 ? (
+            <p className="leise">
+              Für diese Website ist noch kein Inhaltstyp freigeschaltet.
+            </p>
+          ) : (
+            <ul className="liste">
+              {typen.map((t) => (
+                <li key={t.id}>
+                  <Link href={`/t/${tenant.slug}/${t.key}`} className="karte karte-klick">
+                    <span className="stapel-eng">
+                      <strong>{t.namePlural}</strong>
+                      {t.description && <span className="leise">{t.description}</span>}
+                    </span>
+                    <span aria-hidden="true" className="leise">→</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </main>

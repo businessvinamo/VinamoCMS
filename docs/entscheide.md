@@ -155,3 +155,96 @@ eine Middleware ist und keine Datenmigration.
 
 **Warum:** Ein unterscheidbares „gibt es, aber du darfst nicht" würde über
 Slug-Raten die Kundenliste von Vinamo preisgeben.
+
+---
+
+## 11 · Die Speisekarte wird flacher modelliert als spezifiziert
+
+Gefordert war: „Eine Speisekarte ist eine Liste von Kategorien, jede mit einer
+Liste aus Gericht / Beschreibung / Preis / Allergene." Das sind zwei Ebenen
+Wiederholgruppe.
+
+**Umgesetzt:** Nur eine Ebene. Die Kategorie selbst ist ein Eintrag
+(`menu_section`), der eine Wiederholgruppe von Gerichten enthält.
+
+**Warum:** Eine doppelt verschachtelte Liste ist auf einem Handy nicht mehr
+bedienbar, und die Zuordnung von Übersetzungen zu Zeilen würde doppelt indirekt.
+Ein Constraint in Migration 0009 verhindert nested Repeater technisch.
+
+**Was man dadurch gewinnt:** Kategorien sind sortierbar, weil sie Einträge sind.
+Jede Kategorie ist ein eigener Bildschirm statt einer Riesenliste. Und eine
+einzelne Kategorie lässt sich terminieren — „Spargelkarte nur im Mai" verdrängt
+über einen Platz die regulären Vorspeisen, während der Rest der Karte stehen
+bleibt. Mit einem einzigen Speisekarten-Eintrag hätte man dafür die ganze Karte
+duplizieren müssen.
+
+---
+
+## 12 · Wiederholgruppen brauchen eine eigene Zusammenführung
+
+Gefunden beim ersten Test mit echten Speisekartendaten, nachdem Migration 0011
+bereits lief.
+
+`public_content` verschmolz Basiswerte und Übersetzung mit `jsonb_deep_merge`.
+Für einfache Felder korrekt. Für Wiederholgruppen nicht:
+
+| Seite | Struktur |
+| --- | --- |
+| Basis | `"dishes": [ {_id, price, allergens}, … ]` — ein **Array** |
+| Übersetzung | `"dishes": { "<zeilen_id>": {dish}, … }` — ein **Objekt** |
+
+`jsonb_deep_merge` verschmilzt nur Objekt mit Objekt; bei ungleichen Typen
+gewinnt die rechte Seite. Das Übersetzungsobjekt ersetzte also das Array — und
+mit ihm verschwanden Preise, Allergene und die Reihenfolge. Die API hätte
+Gerichtsnamen ohne Preise ausgeliefert.
+
+`merge_entry_values` (Migration 0014) führt jetzt zeilenweise zusammen: Die
+Reihenfolge kommt aus dem Array der Basis, jede Zeile holt ihre Übersetzung über
+ihre stabile `_id` — erst aus der Fallback-Sprache, dann aus der Zielsprache.
+
+Nachgewiesen an einem Fall, der genau diese Klasse Fehler auslöst: Eine Zeile
+wird auf Deutsch **vorne** eingefügt und nicht ins Französische übersetzt. Die
+französische Ausgabe zeigt danach die richtigen Preise an den richtigen
+Gerichten und für die neue Zeile den deutschen Text.
+
+---
+
+## 13 · Die Zeitsteuerung wird beim Lesen gerechnet, der Cron baut nur neu
+
+`entry_status` kennt `draft`, `published`, `archived` — bewusst kein
+`scheduled`, obwohl die Spezifikation es auflistet. „Geplant" wird in der
+Oberfläche aus `published` plus `publish_at` in der Zukunft abgeleitet.
+
+**Warum:** Ein gespeicherter Status müsste von einem Job umgeschaltet werden.
+Verpasst der Job einen Lauf, steht die Datenbank dauerhaft falsch da. So wie es
+jetzt ist, kann ein verpasster Lauf nur dazu führen, dass die **statische**
+Kundenseite verspätet neu gebaut wird — die Lese-API liefert in derselben
+Sekunde das Richtige.
+
+Der Cron in `/api/cron` ändert deshalb nie einen Status. Er stösst nur Rebuilds
+an, wenn seit dem letzten Lauf eine Zeitgrenze überschritten wurde, und arbeitet
+fällige Webhook-Zustellungen ab. Sein Zeitfenster ist mit zehn Minuten
+grosszügig, weil mehrfach angestossene Rebuilds harmlos sind, eine übersprungene
+Zeitgrenze aber nicht.
+
+---
+
+## 14 · Cache-Dauer endet an der nächsten Zeitgrenze
+
+`next_content_change()` liefert die früheste bevorstehende Grenze über alle
+enthaltenen Einträge; die Lese-API begrenzt `max-age` darauf.
+
+**Warum:** Ohne das widersprechen Caching und Terminierung einander. Eine
+Antwort mit fünf Minuten Cache würde die Mittagskarte, die um 11:00 gültig wird,
+irgendwann zwischen 11:00 und 11:05 zeigen — je nachdem, wann der Cache zufällig
+gefüllt wurde.
+
+---
+
+## 15 · Ein abweichender Zeitpunkt in der API braucht ein Token
+
+`?at=` erlaubt es, die Ausgabe zu einem beliebigen Zeitpunkt zu sehen — die
+Grundlage der Vorschau. Ohne Schutz wäre das ein Leck: Jeder könnte
+vorbereitete Aktionen und künftige Preise abrufen, indem er `at` in die Zukunft
+setzt. Die Route verlangt dafür `PREVIEW_TOKEN` und antwortet in dem Fall mit
+`no-store`.
