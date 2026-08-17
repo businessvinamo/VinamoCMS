@@ -51,6 +51,11 @@ Migrationen liegen in `supabase/migrations/` und sind **append-only**. Eine
 fehlerhafte Migration wird nie umgeschrieben, sondern durch eine neue korrigiert —
 siehe `20260817090500_allow_empty_tenant.sql` als Beispiel.
 
+## Deployment
+
+Siehe [`docs/deployment.md`](docs/deployment.md). Wichtig: Das Admin-Backend
+braucht eine Node.js-Laufzeit und kann **keine** statische Website sein.
+
 ## Architekturentscheide
 
 Warum es so gebaut ist und nicht anders: [`docs/entscheide.md`](docs/entscheide.md).
