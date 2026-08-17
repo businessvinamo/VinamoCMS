@@ -1,0 +1,779 @@
+<title>Vinamo CMS Bauplan</title>
+<style>
+  :root {
+    --ground:      #FBFAF9;
+    --surface:     #FFFFFF;
+    --surface-alt: #F4F2F8;
+    --ink:         #1B1B33;
+    --ink-soft:    #4A4762;
+    --muted:       #6E6B85;
+    --line:        #E3E0EC;
+    --line-soft:   #EEECF4;
+    --accent:      #5B3DF5;
+    --accent-soft: #EDE9FE;
+    --crit:        #B3352A;
+    --crit-bg:     #FBEAE8;
+    --warn:        #8A5406;
+    --warn-bg:     #FAF0DF;
+    --note:        #2B5F86;
+    --note-bg:     #E8F0F7;
+    --ok:          #146B54;
+
+    --measure: 68ch;
+    --shell: 1000px;
+    --radius: 6px;
+
+    --f-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --f-mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #131327;
+      --surface:     #1B1B33;
+      --surface-alt: #232342;
+      --ink:         #ECEAF6;
+      --ink-soft:    #C3BFD8;
+      --muted:       #9995B4;
+      --line:        #32314F;
+      --line-soft:   #272645;
+      --accent:      #9583FF;
+      --accent-soft: #2A2551;
+      --crit:        #F09186;
+      --crit-bg:     #3A211E;
+      --warn:        #E5B25C;
+      --warn-bg:     #362A16;
+      --note:        #8FC0E4;
+      --note-bg:     #1B2C3A;
+      --ok:          #64C8AA;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #131327;
+    --surface:     #1B1B33;
+    --surface-alt: #232342;
+    --ink:         #ECEAF6;
+    --ink-soft:    #C3BFD8;
+    --muted:       #9995B4;
+    --line:        #32314F;
+    --line-soft:   #272645;
+    --accent:      #9583FF;
+    --accent-soft: #2A2551;
+    --crit:        #F09186;
+    --crit-bg:     #3A211E;
+    --warn:        #E5B25C;
+    --warn-bg:     #362A16;
+    --note:        #8FC0E4;
+    --note-bg:     #1B2C3A;
+    --ok:          #64C8AA;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.62;
+    margin: 0;
+    padding: 0 24px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: var(--shell);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 56px;
+  }
+
+  .prose { max-width: var(--measure); }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    padding-top: 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 36px;
+  }
+
+  .brandbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brandbar svg { display: block; }
+  .brandbar span {
+    font-size: 12px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: clamp(30px, 5vw, 46px);
+    line-height: 1.1;
+    letter-spacing: -0.022em;
+    font-weight: 750;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    margin: 0;
+    max-width: var(--measure);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--f-mono);
+  }
+
+  /* ---------- sections ---------- */
+
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    scroll-margin-top: 24px;
+  }
+
+  .eyebrow {
+    font-size: 11.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  h2 {
+    font-size: clamp(22px, 3vw, 28px);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    font-weight: 720;
+    margin: -14px 0 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-size: 17px;
+    line-height: 1.35;
+    font-weight: 690;
+    letter-spacing: -0.008em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  p { margin: 0; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  code, .k {
+    font-family: var(--f-mono);
+    font-size: 0.885em;
+    background: var(--surface-alt);
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    padding: 0.08em 0.36em;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  ul, ol { margin: 0; padding-left: 1.25em; }
+  li { margin: 0 0 6px; }
+  li::marker { color: var(--muted); }
+
+  /* ---------- findings ---------- */
+
+  .findings { display: flex; flex-direction: column; gap: 12px; }
+
+  .finding {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .finding-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .num {
+    font-family: var(--f-mono);
+    font-size: 12.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    flex: none;
+  }
+
+  .chip {
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 2.5px 8px;
+    border-radius: 100px;
+    flex: none;
+  }
+  .chip.crit { color: var(--crit); background: var(--crit-bg); }
+  .chip.warn { color: var(--warn); background: var(--warn-bg); }
+  .chip.note { color: var(--note); background: var(--note-bg); }
+
+  .finding p { color: var(--ink-soft); font-size: 15.2px; }
+  .finding .fix {
+    color: var(--ink);
+    font-size: 15.2px;
+    border-left: 2px solid var(--accent);
+    padding-left: 14px;
+  }
+  .fix b { font-weight: 680; }
+
+  /* ---------- phases ---------- */
+
+  .phases {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .phase {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 24px;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: start;
+  }
+
+  .phase-id {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 3px;
+  }
+  .phase-id b {
+    font-size: 26px;
+    line-height: 1;
+    color: var(--accent);
+    font-family: var(--f-body);
+    font-weight: 750;
+    letter-spacing: -0.02em;
+  }
+  .size {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .phase-body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .phase-body > p { color: var(--ink-soft); font-size: 15.2px; }
+
+  .ships {
+    background: var(--surface-alt);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 14.5px;
+    color: var(--ink);
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+  }
+  .ships b {
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ok);
+    font-weight: 700;
+    flex: none;
+    padding-top: 2px;
+  }
+
+  .phase-body ul { font-size: 14.8px; color: var(--ink-soft); }
+
+  /* ---------- questions ---------- */
+
+  .qgroup {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .qgroup + .qgroup { margin-top: 12px; }
+
+  .qgroup > summary {
+    cursor: pointer;
+    padding: 15px 20px;
+    font-weight: 660;
+    font-size: 15.5px;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+  }
+  .qgroup > summary::-webkit-details-marker { display: none; }
+  .qgroup > summary::after {
+    content: "+";
+    font-family: var(--f-mono);
+    color: var(--accent);
+    font-size: 17px;
+    flex: none;
+  }
+  .qgroup[open] > summary::after { content: "–"; }
+  .qgroup[open] > summary { border-bottom: 1px solid var(--line-soft); }
+
+  .qbody { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .q { display: flex; gap: 12px; font-size: 15px; }
+  .q .num { padding-top: 2px; }
+  .q div { color: var(--ink-soft); }
+  .q strong { color: var(--ink); font-weight: 640; display: block; }
+
+  /* ---------- misc ---------- */
+
+  .callout {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .callout p { color: var(--ink-soft); font-size: 15.2px; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.6px; }
+  th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  th {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+    background: var(--surface-alt);
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-family: var(--f-mono); font-size: 13.4px; color: var(--ink); white-space: nowrap; }
+
+  .no-list { list-style: none; padding-left: 0; }
+  .no-list li {
+    padding-left: 24px;
+    position: relative;
+    color: var(--ink-soft);
+    font-size: 15.2px;
+  }
+  .no-list li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--muted);
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+    color: var(--muted);
+    font-size: 13.5px;
+    max-width: var(--measure);
+  }
+
+  @media (max-width: 640px) {
+    body { padding: 0 18px 64px; }
+    .shell { gap: 44px; }
+    .phase { grid-template-columns: 1fr; gap: 12px; }
+    .phase-id { flex-direction: row; align-items: baseline; gap: 10px; }
+  }
+</style>
+
+<div class="shell">
+
+  <header class="masthead">
+    <div class="brandbar">
+      <svg width="26" height="26" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M8 12 L34 12 L58 78 L44 88 Z" fill="#5B3DF5"></path>
+        <path d="M92 12 L66 12 L50 56 L60 70 Z" fill="currentColor"></path>
+      </svg>
+      <span>Vinamo</span>
+    </div>
+    <h1>Ein CMS, viele Kunden</h1>
+    <p class="standfirst">Prüfung der Spezifikation für das mandantenfähige CMS unter admin.vinamo.ch — was sich widerspricht, was fehlt, was ich anders bauen würde, und ein Plan in sieben deploybaren Phasen.</p>
+    <div class="meta">
+      <span>Stand 17.08.2026</span>
+      <span>Status: Entwurf, wartet auf Freigabe</span>
+      <span>Noch kein Code geschrieben</span>
+    </div>
+  </header>
+
+  <section id="urteil">
+    <p class="eyebrow">Kurzfassung</p>
+    <h2>Die Spezifikation trägt. Vier Stellen entscheiden über den Rest.</h2>
+    <div class="stack prose">
+      <p>Der Entwurf ist ungewöhnlich sauber für ein Vorhaben dieser Grösse: Mehrsprachigkeit auf Feldebene statt auf Eintragsebene, Trennung von übersetzbaren und nicht übersetzbaren Feldern, Konfiguration statt Code, statische Auslieferung als Standard. Das sind genau die Entscheidungen, an denen vergleichbare Systeme später scheitern, und sie stehen hier richtig.</p>
+      <p>Vier Punkte sind aber noch nicht entschieden, und alle vier schlagen bis ins Datenmodell durch. Wenn sie erst in Phase 4 auffallen, kosten sie eine Datenmigration über alle Mandanten hinweg. Sie stehen deshalb ganz oben und sollten vor dem ersten <code>CREATE TABLE</code> geklärt sein.</p>
+    </div>
+    <div class="callout prose">
+      <h3>Der eine Satz, der alles bestimmt</h3>
+      <p>„Unterschiede zwischen Kunden sind immer Daten, niemals Code“ ist als Regel richtig — aber sie hält nur, wenn jeder Sonderfall, den ein Kunde später will, im Modell schon einen Platz hat. Zwei Stellen in der Spezifikation haben diesen Platz noch nicht: die Saisonkarte, die die Regelkarte ablöst, und der Kunde, der ein Feld mehr braucht als die anderen. Beides ist unten gelöst.</p>
+    </div>
+  </section>
+
+  <section id="blocker">
+    <p class="eyebrow">Widersprüche und Lücken</p>
+    <h2>Vor dem ersten Schema zu entscheiden</h2>
+    <p class="prose">Eingestuft danach, was eine spätere Korrektur kostet — nicht danach, wie schwierig sie zu bauen ist.</p>
+
+    <div class="findings">
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">01</span>
+          <span class="chip crit">Blocker</span>
+          <h3>Wiederholgruppen und Feldebene-Übersetzung passen ohne Zeilen-IDs nicht zusammen</h3>
+        </div>
+        <p>Eine Speisekarten-Kategorie ist eine Liste von Zeilen aus Gericht, Beschreibung, Preis, Allergene. Gericht und Beschreibung sind übersetzbar und liegen laut Spezifikation in <code>entry_translations</code>. Preis und Allergene sind es nicht und liegen am Eintrag. Damit ist eine einzelne Zeile über zwei Datensätze verteilt. Verbindet man beide Hälften über die Position im Array, geht das genau so lange gut, bis die Wirtin auf Deutsch eine Zeile in der Mitte einfügt: ab dort sitzen alle französischen Bezeichnungen an den falschen Preisen. Das passiert still, niemand merkt es im Admin, und es steht sofort öffentlich auf der Speisekarte.</p>
+        <p class="fix"><b>Lösung:</b> Jede Repeater-Zeile bekommt beim Anlegen eine generierte UUID. Die nicht übersetzbare Struktur inklusive Reihenfolge und IDs liegt am Eintrag; die Übersetzung ist eine flache Zuordnung <code>{ zeilen_id: { feld: wert } }</code>. Nie über den Index verbinden. Das kostet in Phase 2 eine halbe Stunde und ist später nicht mehr nachrüstbar, ohne jeden bestehenden Repeater-Inhalt anzufassen.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">02</span>
+          <span class="chip crit">Blocker</span>
+          <h3>Bei statischer Auslieferung veröffentlicht sich nichts von selbst</h3>
+        </div>
+        <p>Die Spezifikation setzt statische Auslieferung als Standard und lässt gleichzeitig Inhalte per <code>publish_at</code> und <code>valid_from</code> in der Zukunft scharf werden. Beides zusammen ergibt nur dann etwas, wenn zum gesetzten Zeitpunkt jemand einen Rebuild auslöst. Sonst ist die Winteraktion um 11:00 Uhr in der Datenbank gültig und auf der ausgelieferten Seite trotzdem unsichtbar — bis der Kunde zufällig etwas anderes speichert. Es steht nirgends, wer diesen Anstoss gibt.</p>
+        <p class="fix"><b>Lösung, zweiteilig.</b> Erstens: Gültigkeit ist <b>keine</b> gespeicherte Statusänderung, sondern wird beim Lesen ausgewertet. Kein Cron kann einen Statuswechsel verpassen, und es gibt kein Zeitfenster, in dem die Datenbank inkonsistent ist. <code>scheduled</code> bleibt reine Anzeige im Admin. Zweitens: ein Zeitplan-Job prüft minütlich, ob eine gesetzte Zeitgrenze überschritten wurde, und löst dann ausschliesslich den Rebuild-Webhook aus. Verpasst er einen Lauf, ist die Seite verspätet — aber niemals falsch.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">03</span>
+          <span class="chip crit">Blocker</span>
+          <h3>„Zurückfallen auf einen Standard-Eintrag“ ist noch kein Modell</h3>
+        </div>
+        <p>Die Anforderung ist klar — nach dem Ende der Saisonkarte gilt wieder die Regelkarte — aber sie lässt offen, worauf zurückgefallen wird. Bei einer Sammlung wie News ergibt „ein Standard-Eintrag“ keinen Sinn; bei einer Einzelseite wie Öffnungszeiten schon. Ohne ein Modell dafür landet man exakt bei dem, was das Leitprinzip verbietet: einem Sonderfall pro Kunde.</p>
+        <p class="fix"><b>Lösung:</b> Ein Eintrag kann einem <b>Platz</b> zugeordnet sein (z. B. <code>karte</code>). Innerhalb eines Platzes gewinnt zum Abrufzeitpunkt der gültige Eintrag mit der höchsten Priorität; ein Eintrag ganz ohne Gültigkeitszeitraum ist der Standard und gewinnt, wenn sonst nichts gilt. Damit ist „Saisonkarte schlägt Regelkarte“, „Ferienöffnungszeiten schlagen reguläre“ und „befristete Aktion“ dieselbe Mechanik — konfiguriert, nicht programmiert. Einträge ohne Platz verhalten sich wie heute: gültig oder unsichtbar.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">04</span>
+          <span class="chip crit">Blocker</span>
+          <h3>Womit sind die Kundenwebsites gebaut?</h3>
+        </div>
+        <p>Rebuild-Webhook und Vorschau eines Entwurfsstands setzen beide voraus, dass die Kundenseite mitspielt: Sie muss sich per Webhook neu bauen lassen und einen Vorschaumodus mit Token, Sprache und Zeitpunkt kennen. Für Next.js ist das eine Tagesarbeit. Für bestehende Seiten in WordPress, Webflow oder handgeschriebenem HTML ist es ein eigenes Vorhaben — und die Vorschau, laut Spezifikation der Punkt, an dem der Kunde Vertrauen fasst, wäre in Phase 3 nicht lieferbar.</p>
+        <p class="fix"><b>Offen — das ist meine wichtigste Frage an dich.</b> Solange sie unbeantwortet ist, plane ich Phase 3 mit einer eigenen Vorschau <em>im Admin</em> (gerendert aus den Feldern, ohne Kundenlayout). Die ist ohnehin nützlich, aber sie ersetzt die echte Seitenvorschau nicht.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">05</span>
+          <span class="chip warn">Wichtig</span>
+          <h3>Entwurf und Live-Stand müssen gleichzeitig existieren</h3>
+        </div>
+        <p>Automatisches Zwischenspeichern und ein bewusstes Veröffentlichen schliessen sich gegenseitig aus, wenn es nur einen Satz Werte pro Eintrag gibt: Jeder Tastendruck der Wirtin stünde sofort auf der Website. Die Spezifikation fordert beides, sagt aber nicht, wie sie nebeneinander liegen.</p>
+        <p class="fix"><b>Lösung:</b> <code>entries</code> und <code>entry_translations</code> enthalten <b>immer den Entwurf</b>. Beim Veröffentlichen entsteht ein unveränderlicher Schnappschuss in <code>entry_versions</code> — alle Sprachen, alle Felder, in einem Datensatz — und <code>entries.published_version_id</code> zeigt darauf. Das liefert Versionshistorie, Rollback und atomares Veröffentlichen ohne Zusatzaufwand, und die öffentliche Lese-API liest genau eine Zeile pro Eintrag statt über drei Tabellen zu verbinden.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">06</span>
+          <span class="chip warn">Wichtig</span>
+          <h3>Der klassische RLS-Fehler: Endlosschleife über tenant_members</h3>
+        </div>
+        <p>Eine Richtlinie auf <code>tenant_members</code>, die zur Prüfung selbst <code>tenant_members</code> abfragt, erzeugt in Postgres eine Rekursion — die Tabelle wird für alle unlesbar. Dazu kommt die Sonderrolle <code>vinamo_admin</code>, die mandantenübergreifend lesen darf und in jeder einzelnen Richtlinie berücksichtigt werden muss.</p>
+        <p class="fix"><b>Lösung:</b> Mandantszugehörigkeit und Rolle liegen als Claims im JWT und werden bei jeder Mitgliedschaftsänderung erneuert; die Richtlinien lesen ausschliesslich aus dem Token und aus <code>SECURITY DEFINER</code>-Hilfsfunktionen, nie direkt aus der Mitgliedertabelle. Ein einziger Satz Richtlinien-Bausteine, auf jede Tabelle gleich angewandt.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">07</span>
+          <span class="chip warn">Wichtig</span>
+          <h3>Schreiben direkt aus dem Browser umgeht jede Feldvalidierung</h3>
+        </div>
+        <p>Wenn das Admin mit dem Supabase-Client direkt in die Tabellen schreibt, prüft Postgres nur die Mandantentrennung. Ob ein Pflichtfeld gefüllt ist, ob ein Preis eine Zahl ist, ob ein Rich-Text nur erlaubte Auszeichnungen enthält — das weiss nur die Feldkonfiguration, und die lebt in TypeScript. Ein Fehler im Formular oder ein neugieriger Nutzer mit der Browser-Konsole schreibt an ihr vorbei.</p>
+        <p class="fix"><b>Lösung:</b> Alle Schreibvorgänge laufen über eine Serverschicht in Next.js, die aus der Feldkonfiguration ein Validierungsschema baut und es anwendet. RLS bleibt aktiv und ist das zweite Netz, nicht das einzige. Der öffentliche Supabase-Schlüssel wird nirgends ausgeliefert.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">08</span>
+          <span class="chip warn">Wichtig</span>
+          <h3>Caching und Zeitsteuerung widersprechen sich still</h3>
+        </div>
+        <p>Die Lese-API soll sinnvoll gecacht werden und gleichzeitig zeitgesteuerte Inhalte serverseitig auswerten. Mit einer festen Cache-Dauer von einer Stunde erscheint die Mittagskarte, die um 11:00 gültig wird, irgendwann zwischen 11:00 und 12:00 — abhängig davon, wann der Cache zufällig gefüllt wurde.</p>
+        <p class="fix"><b>Lösung:</b> Jede Antwort berechnet mit, wann sich ihr Inhalt das nächste Mal ändert — die früheste bevorstehende Zeitgrenze über alle enthaltenen Einträge — und begrenzt die Cache-Dauer auf genau diesen Moment. <code>ETag</code> kommt aus einem Zählerstand pro Mandant, der beim Veröffentlichen hochgezählt wird.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">09</span>
+          <span class="chip warn">Wichtig</span>
+          <h3>Referenzen in JSONB haben keine referentielle Integrität</h3>
+        </div>
+        <p>Medien-Referenzen und Referenzen auf andere Einträge liegen als IDs in einem JSONB-Feld. Postgres kann darauf keinen Fremdschlüssel legen. Löscht der Kunde ein Bild aus der Mediathek, entstehen tote Verweise — sichtbar erst auf der Website als fehlendes Bild.</p>
+        <p class="fix"><b>Lösung:</b> Eine schmale Verknüpfungstabelle, die beim Speichern mitgeschrieben wird. Damit lässt sich beim Löschen sagen „dieses Bild wird an vier Stellen verwendet“, statt es stillschweigend kaputtgehen zu lassen.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">10</span>
+          <span class="chip warn">Wichtig</span>
+          <h3>Fokuspunkt am Bild, Seitenverhältnis am Feld — das kollidiert</h3>
+        </div>
+        <p>Die Spezifikation legt den Fokuspunkt an das Medium und das erzwungene Seitenverhältnis an das Medienfeld. Dasselbe Foto in einem 16:9-Kopfbereich und in einer 1:1-Kachel braucht dann aber zwei verschiedene Zuschnitte — bei einem einzigen gespeicherten Fokuspunkt gewinnt einer und der andere sieht falsch aus. Gleichzeitig soll ein Bild ohne Duplikat mehrfach verwendbar sein.</p>
+        <p class="fix"><b>Lösung:</b> Fokuspunkt am Medium als Vorgabe, die für die meisten Fälle reicht; optionaler Zuschnitt-Rahmen <em>pro Verwendung</em>, gespeichert im Feldwert. Der Zuschnitt-Dialog schlägt den Fokuspunkt vor, der Kunde kann pro Stelle abweichen. Ausserdem: Originaldatei behalten, damit später neu zugeschnitten werden kann.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">11</span>
+          <span class="chip warn">Wichtig</span>
+          <h3>Was passiert, wenn ein Kunde ein Feld mehr braucht?</h3>
+        </div>
+        <p>Inhaltstypen sind global definiert und pro Mandant aktiviert. Sobald ein Restaurant ein Feld „vegan“ will, das die anderen nicht haben, gibt es nur drei Wege: allen aufzwingen, einen zweiten Inhaltstyp anlegen, oder pro Mandant abweichen. Die Spezifikation entscheidet sich für keinen.</p>
+        <p class="fix"><b>Vorschlag:</b> Feldsätze bleiben global und versioniert. Pro Mandant erlaubt sind nur <em>subtraktive und kosmetische</em> Abweichungen: Feld ausblenden, Beschriftung und Hilfetext ändern, Pflichtfeld lockern. Neue Felder gibt es nur global — sie sind additiv und stören niemanden, der sie nicht nutzt. Damit bleibt die Regel „Unterschiede sind Daten“ intakt, ohne dass vier Kunden vier Schemata bekommen.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">12</span>
+          <span class="chip warn">Wichtig</span>
+          <h3>Ein geänderter Slug erzeugt einen 404</h3>
+        </div>
+        <p>Slugs sind pro Sprache eigenständig und vom Kunden bearbeitbar. Ändert er einen, sind alle bestehenden Links und der Google-Eintrag tot. Für KMU-Websites ist das ein echter, direkt spürbarer Schaden.</p>
+        <p class="fix"><b>Lösung:</b> Slug-Historie pro Eintrag und Sprache, die Lese-API liefert die alten Slugs als Weiterleitungsziele mit. Klein, aber sehr viel billiger als der Anruf danach.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">13</span>
+          <span class="chip note">Hinweis</span>
+          <h3>Wiederkehrende Zeiten sind kein Gültigkeitszeitraum</h3>
+        </div>
+        <p>„Montag Ruhetag“ oder „Mittagskarte 11–14 Uhr“ lassen sich mit <code>valid_from</code> und <code>valid_until</code> nicht abbilden — das sind einmalige Zeitspannen, keine Wiederholungen. Wenn Öffnungszeiten oder Tageskarten geplant sind, ist das ein Feldtyp, kein Publikationsmerkmal. Kein Blocker, aber die beiden Konzepte dürfen nicht vermischt werden.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">14</span>
+          <span class="chip note">Hinweis</span>
+          <h3>Rich-Text als Struktur speichern, nicht als HTML</h3>
+        </div>
+        <p>Wird HTML gespeichert, ist jede spätere Ausgabe eine Bereinigungsaufgabe und jede Layoutänderung ein Suchen-und-Ersetzen über Kundendaten. Empfehlung: strukturiertes Dokument-JSON mit einer engen Erlaubnisliste — fett, kursiv, Link, Aufzählung, Zwischentitel — und HTML erst bei der Ausgabe erzeugen.</p>
+      </article>
+
+      <article class="finding">
+        <div class="finding-head">
+          <span class="num">15</span>
+          <span class="chip note">Hinweis</span>
+          <h3>Datenhaltung in der EU, aber nicht nur die Datenbank</h3>
+        </div>
+        <p>Supabase in Frankfurt deckt die Datenbank und den Speicher ab. Serverfunktionen bei Vercel müssen ausdrücklich auf eine EU-Region festgelegt werden, sonst laufen sie irgendwo. Dazu kommen Auftragsverarbeitungsverträge mit beiden Anbietern. Für das revDSG genügt das; für Kunden mit besonderen Anforderungen wäre ein Schweizer Hosting ein separates Thema.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="anders">
+    <p class="eyebrow">Abweichende Empfehlung</p>
+    <h2>Vier Stellen, an denen ich anders bauen würde</h2>
+
+    <div class="findings">
+      <article class="finding">
+        <h3>Gültigkeit einmal in SQL, nicht zweimal in TypeScript</h3>
+        <p>Statischer Build und Lese-API brauchen beide dieselbe Antwort auf „was gilt jetzt für Mandant X in Sprache FR“. Zweimal implementiert, driften sie auseinander, und der Fehler zeigt sich als „auf der Website steht etwas anderes als in der Vorschau“. Ich baue diese Auswertung als <b>eine</b> Datenbankfunktion mit einem Parameter für den Zeitpunkt. Die Vorschau eines künftigen Zeitpunkts ist dann dieselbe Funktion mit einem anderen Argument — kein zweiter Codepfad, und automatisch getestet.</p>
+      </article>
+
+      <article class="finding">
+        <h3>Der Isolationstest schreibt sich selbst fort</h3>
+        <p>„Tests, die belegen, dass Mandant A nie Daten von Mandant B sieht“ werden üblicherweise einmal pro Tabelle von Hand geschrieben — und bei Tabelle Nummer 14 vergessen. Ich lese stattdessen zur Testzeit aus dem Systemkatalog <em>alle</em> Tabellen mit einer <code>tenant_id</code> und erzeuge für jede automatisch denselben Test gegen zwei echte Nutzer-Tokens. Eine neue Tabelle ohne Richtlinie lässt die Testsuite sofort rot werden, ohne dass jemand daran denken muss.</p>
+      </article>
+
+      <article class="finding">
+        <h3>Ein Feldtyp ist ein Modul, kein Zweig in einer Verzweigung</h3>
+        <p>Die zwölf Feldtypen brauchen jeweils vier Dinge: ein Eingabefeld, eine Validierungsregel, eine Ausgabeform für die API und eine Angabe, ob sie übersetzbar sein können. Liegt das verstreut, wächst mit jedem neuen Typ eine Verzweigung an vier Stellen. Ich lege pro Typ ein Modul mit genau diesen vier Teilen an und registriere es. Einen dreizehnten Feldtyp zu ergänzen heisst dann: eine Datei, kein Eingriff in bestehende.</p>
+      </article>
+
+      <article class="finding">
+        <h3>Der Pilot-Inhaltstyp sollte nicht die Speisekarte sein</h3>
+        <p>Die Speisekarte ist das überzeugendste Beispiel und gleichzeitig der schwierigste Fall — sie braucht Wiederholgruppen, Medien und Plätze auf einmal. Als erster Typ Ende-zu-Ende schlage ich etwas Einfacheres vor, das dieselben Mechaniken durchläuft (Mehrsprachigkeit, Terminierung, Entwurf und Veröffentlichung, Lese-API), aber ohne verschachtelte Strukturen: <b>News</b> oder <b>Öffnungszeiten</b>. Die Speisekarte kommt in Phase 5, wenn Wiederholgruppen und Medien stehen — dann ist sie eine Konfiguration und kein Bauvorhaben.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="phasen">
+    <p class="eyebrow">Umsetzung</p>
+    <h2>Sieben Phasen, jede einzeln deploybar</h2>
+    <p class="prose">Die Reihenfolge folgt deiner Vorgabe: Datenmodell und Mandantentrennung zuerst, dann ein Inhaltstyp vollständig durch, dann Medien, dann der Rest. Jede Phase endet mit etwas, das auf der Staging-Umgebung läuft und vorführbar ist. Grössen sind relativ, nicht in Tagen — belastbare Schätzungen gebe ich nach der Freigabe pro Phase.</p>
+
+    <div class="phases">
+
+      <article class="phase">
+        <div class="phase-id"><b>0</b><span>Fundament</span><span class="size">Klein</span></div>
+        <div class="phase-body">
+          <p>Next.js mit App Router und TypeScript, zwei Supabase-Projekte in Frankfurt für Staging und Produktion, Migrationen als Dateien im Repository, durchgehende Prüfläufe bei jedem Push. Brand-Paket wird zu Design-Tokens — Violett, Navy, Papier, die beiden Schriften, Favicons.</p>
+          <div class="ships"><b>Läuft</b><span>Leere Admin-Oberfläche unter admin.vinamo.ch, Anmeldung per E-Mail funktioniert, Staging und Produktion getrennt.</span></div>
+        </div>
+      </article>
+
+      <article class="phase">
+        <div class="phase-id"><b>1</b><span>Mandanten</span><span class="size">Mittel</span></div>
+        <div class="phase-body">
+          <p>Mandanten, Mitgliedschaften, die drei Rollen, Row Level Security auf allen Tabellen, Mandantszugehörigkeit im Token, Einladungsablauf, Mandantenwechsler für Nutzer mit mehreren Zugängen. Funktionsschalter global und pro Mandant. Beginn des Änderungsprotokolls.</p>
+          <ul>
+            <li>Selbstfortschreibender Isolationstest über alle Tabellen mit <code>tenant_id</code></li>
+            <li>Test-Mandant, der dir selbst gehört, auf Staging und Produktion</li>
+            <li>Rollenprüfung: <code>editor</code> kann nachweislich niemanden einladen</li>
+          </ul>
+          <div class="ships"><b>Läuft</b><span>Du legst Mandanten an und lädst Nutzer ein. Der Testlauf beweist schriftlich, dass Mandant A nichts von Mandant B sieht.</span></div>
+        </div>
+      </article>
+
+      <article class="phase">
+        <div class="phase-id"><b>2</b><span>Inhalts-Engine</span><span class="size">Gross</span></div>
+        <div class="phase-body">
+          <p>Inhaltstypen und Felder als Daten, Aktivierung pro Mandant, Feldtyp-Register mit den einfachen Typen (Text, Textarea, Rich-Text, Zahl, Preis, Datum, Boolean, Auswahl, Mehrfachauswahl). Editor mit automatischem Zwischenspeichern, deutlicher Trennung zwischen gespeichert und veröffentlicht, Versionsschnappschuss bei jeder Veröffentlichung. Noch einsprachig.</p>
+          <ul>
+            <li>Schreibpfad ausschliesslich über die Serverschicht, Validierung aus der Feldkonfiguration</li>
+            <li>Wiederherstellen der letzten Version für den Kunden, vollständige Historie für dich</li>
+            <li>Mobile-first von Beginn an — die Editor-Oberfläche entsteht hier, nicht als Politur später</li>
+          </ul>
+          <div class="ships"><b>Läuft</b><span>Ein Kunde pflegt einen echten Inhaltstyp, speichert automatisch, veröffentlicht bewusst und kann zurückrollen.</span></div>
+        </div>
+      </article>
+
+      <article class="phase">
+        <div class="phase-id"><b>3</b><span>Ende-zu-Ende</span><span class="size">Gross</span></div>
+        <div class="phase-body">
+          <p>Der Kern deiner Vorgabe: derselbe Inhaltstyp jetzt vollständig. Mehrsprachigkeit auf Feldebene mit Fallback und sichtbarem Übersetzungsstatus, Sprachumschalter direkt im Editor. Terminierung, Gültigkeitszeiträume, Priorität, Plätze. Vorschau eines beliebigen künftigen Zeitpunkts. Öffentliche Lese-API pro Mandant und Sprache mit <code>ETag</code> und zeitgrenzenbewusstem Caching. Veröffentlichungs-Webhook.</p>
+          <ul>
+            <li>Gültigkeitsauswertung als eine Datenbankfunktion, von API und Vorschau gemeinsam genutzt</li>
+            <li>Zeitplan-Job, der ausschliesslich Rebuilds anstösst — nie Status verändert</li>
+            <li>Eigenständige Slugs pro Sprache samt Slug-Historie</li>
+          </ul>
+          <div class="ships"><b>Läuft</b><span>Ein Pilotkunde pflegt viersprachig, plant eine befristete Aktion, sieht sie in der Vorschau zum Zieldatum — und die API liefert sie erst ab dem Moment aus.</span></div>
+        </div>
+      </article>
+
+      <article class="phase">
+        <div class="phase-id"><b>4</b><span>Medien</span><span class="size">Mittel</span></div>
+        <div class="phase-body">
+          <p>Upload in Supabase Storage pro Mandant, serverseitige Verkleinerung und Umwandlung in vier Breiten als WebP, Originaldatei bleibt erhalten. Alt-Texte übersetzbar, Fokuspunkt am Bild, optionaler Zuschnitt pro Verwendung. Mediathek mit Mehrfachverwendung ohne Duplikat. Die API liefert fertige <code>srcset</code>-Angaben.</p>
+          <ul>
+            <li>Grössenbegrenzung, Typprüfung, Entfernen von EXIF-Daten inklusive GPS-Position</li>
+            <li>Verknüpfungstabelle: „dieses Bild wird an vier Stellen verwendet“ beim Löschen</li>
+            <li>Speicherkontingent pro Mandant</li>
+          </ul>
+          <div class="ships"><b>Läuft</b><span>Ein 8-MB-Handyfoto wird hochgeladen, automatisch zugeschnitten und ausgeliefert, ohne dass jemand über Bildgrössen nachdenkt.</span></div>
+        </div>
+      </article>
+
+      <article class="phase">
+        <div class="phase-id"><b>5</b><span>Struktur</span><span class="size">Gross</span></div>
+        <div class="phase-body">
+          <p>Wiederholgruppen mit stabilen Zeilen-IDs, Referenzen auf andere Einträge, Sortierung per Drag &amp; Drop. Jetzt entsteht die Speisekarte — als Konfiguration. Dazu der Branchen-Baukasten: vordefinierte Inhaltstyp-Sets für Restaurant, Handwerk, Coiffeur und Praxis, die du beim Onboarding auswählst.</p>
+          <ul>
+            <li>Repeater-Bedienung auf dem Handy: einklappbare Zeilen, grosse Ziehpunkte</li>
+            <li>Onboarding eines neuen Mandanten von null auf gepflegt in einem Durchgang</li>
+          </ul>
+          <div class="ships"><b>Läuft</b><span>Die Wirtin ändert das Tagesmenü vom Handy — gemessen, nicht behauptet.</span></div>
+        </div>
+      </article>
+
+      <article class="phase">
+        <div class="phase-id"><b>6</b><span>Betrieb</span><span class="size">Mittel</span></div>
+        <div class="phase-body">
+          <p>Was du brauchst, sobald mehr als zwei Kunden darauf laufen: Webhook-Protokoll mit Wiederholversuchen und sichtbaren Fehlern, Änderungsprotokoll als Oberfläche, Datenexport pro Mandant als JSON plus Medien, Oberfläche für Funktionsschalter — und eine <em>durchgeführte</em> Wiederherstellungsübung aus dem Backup, mit Datum protokolliert.</p>
+          <div class="ships"><b>Läuft</b><span>Du siehst, wessen Rebuild fehlgeschlagen ist, wer wann was veröffentlicht hat, und kannst einen Kunden vollständig exportieren.</span></div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="fragen">
+    <p class="eyebrow">Offene Punkte</p>
+    <h2>Was ich von dir brauche</h2>
+    <p class="prose">Die ersten vier blockieren das Datenmodell. Der Rest lässt sich bis zur jeweiligen Phase klären — ich habe überall eine Annahme notiert, mit der ich sonst weiterarbeite.</p>
+
+    <details class="qgroup" open>
+      <summary>Blockierend — vor Phase 1</summary>
+      <div class="qbody">
+        <div class="q"><span class="num">01</span><div><strong>Womit sind die Kundenwebsites gebaut?</strong>Bestehende und geplante. Davon hängen Rebuild-Webhook und echte Seitenvorschau ab. <em>Annahme sonst: Next.js, Vorschau vorerst nur im Admin.</em></div></div>
+        <div class="q"><span class="num">02</span><div><strong>Welcher Kunde und welcher Inhaltstyp sind der Pilot?</strong>Ich brauche einen echten, damit Phase 3 an realem Inhalt endet statt an einem Beispiel. <em>Annahme sonst: dein eigener Test-Mandant mit „News“.</em></div></div>
+        <div class="q"><span class="num">03</span><div><strong>Dürfen Kunden je abweichende Felder bekommen?</strong>Siehe Punkt 11. Mein Vorschlag: nur ausblenden, umbenennen, Pflicht lockern — neue Felder immer global. <em>Annahme sonst: dieser Vorschlag.</em></div></div>
+        <div class="q"><span class="num">04</span><div><strong>Wie viele Mandanten in zwölf Monaten?</strong>Fünf oder fünfzig ändert, ob ein eigenes Deployment pro Kundenseite tragbar ist. <em>Annahme sonst: unter zwanzig.</em></div></div>
+      </div>
+    </details>
+
+    <details class="qgroup">
+      <summary>Bis Phase 3 zu klären</summary>
+      <div class="qbody">
+        <div class="q"><span class="num">05</span><div><strong>Sprachcodes <code>de</code>/<code>fr</code>/<code>it</code>/<code>en</code> oder <code>de-CH</code>/<code>fr-CH</code>?</strong>Sie landen in den URLs der Kundenseiten und sind später teuer zu ändern. <em>Annahme sonst: zweistellig, Inhalte in Schweizer Schreibweise.</em></div></div>
+        <div class="q"><span class="num">06</span><div><strong>In welcher Sprache spricht die Admin-Oberfläche?</strong>Getrennt von den Inhaltssprachen. Ein Westschweizer Mitarbeiter würde FR erwarten. <em>Annahme sonst: Deutsch, technisch übersetzbar vorbereitet.</em></div></div>
+        <div class="q"><span class="num">07</span><div><strong>Gibt es die Supabase-Projekte und das Vercel-Konto schon?</strong>Und ist <code>admin.vinamo.ch</code> als Subdomain frei verfügbar? <em>Annahme sonst: ich lege alles neu an und melde mich für die DNS-Einträge.</em></div></div>
+      </div>
+    </details>
+
+    <details class="qgroup">
+      <summary>Später, aber nicht vergessen</summary>
+      <div class="qbody">
+        <div class="q"><span class="num">08</span><div><strong>Wie lange werden Versionen aufbewahrt?</strong>Unbegrenzt ist die einfachste Antwort und bei diesen Datenmengen bezahlbar. <em>Annahme sonst: unbegrenzt, Aufräumen später bei Bedarf.</em></div></div>
+        <div class="q"><span class="num">09</span><div><strong>Fokuspunkt global oder Zuschnitt pro Verwendung?</strong>Siehe Punkt 10. Beides zu bauen kostet in Phase 4 etwa einen Tag mehr. <em>Annahme sonst: beides.</em></div></div>
+        <div class="q"><span class="num">10</span><div><strong>Sind Öffnungszeiten mit Wiederholung geplant?</strong>Falls ja, ist das ein eigener Feldtyp und sollte im Register von Anfang an mitgedacht werden. <em>Annahme sonst: vorerst nicht.</em></div></div>
+        <div class="q"><span class="num">11</span><div><strong>Auf welchen Branch soll ich pushen?</strong>Du schreibst „immer auf main“, meine Arbeitsanweisung nennt <code>claude/vinamo-multi-tenant-cms-0zzf5q</code>. Ich habe diesen Plan auf den Arbeitsbranch gelegt und warte auf deine Ansage.</div></div>
+      </div>
+    </details>
+  </section>
+
+  <section id="nichtziele">
+    <p class="eyebrow">Bestätigt</p>
+    <h2>Wird nicht gebaut</h2>
+    <ul class="no-list prose">
+      <li>Shop, Kasse, Formularbaukasten, Newsletter, Terminbuchung, Analytics, visueller Seiten-Baukasten</li>
+      <li>Layoutkontrolle in Kundenhand — Layout bleibt im Template</li>
+      <li>Kundenspezifische Codepfade jeder Art, auch nicht „nur diesmal“</li>
+    </ul>
+    <p class="prose">Zwei Dinge baue ich trotzdem mit ein, weil sie im Datenmodell später teuer sind: Plätze für Standard- und Saisoninhalte (Punkt 3) und stabile Zeilen-IDs in Wiederholgruppen (Punkt 1). Beide sind unsichtbar, bis man sie braucht.</p>
+  </section>
+
+  <footer>
+    Erstellt für Vinamo, 17. August 2026. Grundlage ist deine Spezifikation im Wortlaut — nichts hier ist bereits umgesetzt. Nach deiner Freigabe beginne ich mit Phase 0 und melde mich am Ende jeder Phase mit etwas Lauffähigem.
+  </footer>
+
+</div>
