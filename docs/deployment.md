@@ -86,6 +86,27 @@ als Redirect URL. Sonst führen die Magic Links ins Leere.
 
 ---
 
+## Ersten Zugang einrichten
+
+Es gibt keine Selbstregistrierung. Der erste Benutzer jeder Umgebung braucht
+deshalb einen Weg an der Oberfläche vorbei:
+
+```bash
+npm run admin:anlegen deine@adresse.ch
+```
+
+Das Skript legt das Konto über die Admin-API an, vergibt die Rolle `admin`,
+zeigt ein Startpasswort und **meldet sich damit testweise an**, bevor es Erfolg
+meldet. Alle weiteren Zugänge entstehen danach im Admin unter
+`/t/<mandant>/benutzer`.
+
+Lege Auth-Benutzer nie mit `insert into auth.users` an. Das sieht aus, als würde
+es funktionieren, aber ohne die zugehörige Zeile in `auth.identities` und mit
+`NULL` in den Token-Spalten scheitert die Anmeldung mit einem 500er, der in der
+Oberfläche als „Passwort falsch" ankommt. Siehe `docs/entscheide.md`, Eintrag 18.
+
+---
+
 ## Kundenwebsites
 
 Ein Deployment pro Kundenseite, mit eigener Domain und `VINAMO_TENANT=<slug>`.

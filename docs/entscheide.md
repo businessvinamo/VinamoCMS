@@ -318,3 +318,36 @@ Plattformrechte vergeben. Das erzwingt die `WITH CHECK`-Klausel auf
 
 Der Enum `tenant_role` bleibt mit dem einzigen Wert `client` bestehen — damit
 eine spätere abgestufte Rolle keine Schemaänderung an `tenant_members` braucht.
+
+---
+
+## 18 · Auth-Benutzer niemals per SQL anlegen
+
+Beim Einrichten der Staging-Umgebung habe ich den ersten Admin-Zugang mit einem
+`insert into auth.users` erzeugt — Passwort als bcrypt-Hash, Metadaten gesetzt,
+Rolle vergeben. Eine Abfrage danach bestätigte alles: Hash stimmt, E-Mail
+bestätigt, Rolle da, Mandant zugeordnet.
+
+Die Anmeldung scheiterte trotzdem. Supabase Auth antwortete mit HTTP 500 und
+`Database error querying schema`, was in der Oberfläche als „E-Mail-Adresse oder
+Passwort stimmt nicht" ankam — die Fehlermeldung ist absichtlich unspezifisch,
+und genau das hat die Diagnose verzögert.
+
+Zwei Dinge liefert ein SQL-Insert nicht mit:
+
+1. **Keine Zeile in `auth.identities`.** Über sie findet der E-Mail-Anbieter den
+   Benutzer überhaupt erst. Ohne sie existiert das Konto für die Anmeldung nicht,
+   obwohl es in `auth.users` steht.
+2. **`NULL` statt `''`** in `confirmation_token`, `recovery_token`,
+   `email_change`, `email_change_token_new` und Verwandten. Der Auth-Dienst liest
+   diese Spalten in nicht-nullable Felder ein; ein NULL bricht die Abfrage.
+
+**Regel:** Auth-Benutzer entstehen ausschliesslich über die Admin-API
+(`admin.auth.admin.createUser`). Für den Erstzugang jeder Umgebung gibt es dafür
+`scripts/admin-anlegen.mjs`.
+
+**Der eigentliche Fehler war aber die Prüfung, nicht der Insert.** Ich hatte
+verifiziert, dass der Datenbankzustand stimmt — und daraus geschlossen, dass die
+Anmeldung funktioniert. Das ist zweierlei. Das Skript meldet deshalb nicht
+„angelegt", sondern meldet erst, nachdem es sich mit dem erzeugten Passwort
+tatsächlich angemeldet hat.
