@@ -261,7 +261,13 @@ export function Editor({
         </div>
       )}
 
-      <Zeitsteuerung typ={typ} wert={zeitplan} onChange={(z) => { setZeitplan(z); aendere() }} />
+      {/*
+        Nur bei Typen, die einen Zeitbezug haben. Eine Mitarbeiterin plant
+        niemand für den 14. März -- der Abschnitt wäre dort nur Ballast.
+      */}
+      {typ.supportsScheduling && (
+        <Zeitsteuerung typ={typ} wert={zeitplan} onChange={(z) => { setZeitplan(z); aendere() }} />
+      )}
 
       {fehler.length > 0 && (
         <div className="hinweis warn" role="alert">

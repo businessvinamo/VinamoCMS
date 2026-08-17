@@ -44,6 +44,7 @@ export type ContentType = {
   sortable: boolean
   hasSlug: boolean
   supportsSlots: boolean
+  supportsScheduling: boolean
   description: string
   fields: Field[]
 }

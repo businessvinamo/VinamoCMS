@@ -71,6 +71,15 @@ Warum es so gebaut ist und nicht anders: [`docs/entscheide.md`](docs/entscheide.
 das Startpasswort wird einmalig angezeigt und muss beim ersten Anmelden geändert
 werden.
 
+## Mandanten verwalten
+
+Als `admin` unter `/admin`: Mandanten anlegen (mit Branchen-Set), Inhaltstypen
+pro Kunde freischalten, Funktionen ein- und ausschalten, Mandanten stilllegen.
+
+## Inhalte auf einer Website einbinden
+
+Anleitung mit Beispielen: [`docs/einbinden.md`](docs/einbinden.md).
+
 ## Öffentliche Lese-API
 
 ```

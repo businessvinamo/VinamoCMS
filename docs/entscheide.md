@@ -405,3 +405,51 @@ ungefährlich; der Schlüssel selbst wäre es nicht.
 
 Dazu antworten Lese-API und Cron bei fehlender Konfiguration mit `503` und
 Klartext statt mit einem nackten `500`.
+
+---
+
+## 21 · Zeitsteuerung ist eine Eigenschaft des Inhaltstyps
+
+Der Editor zeigte den Abschnitt „Zeitsteuerung" bei **jedem** Typ. Bei einer
+Neuigkeit oder Speisekarte ist das richtig, bei Team und Leistungen ist es
+Ballast — niemand plant eine Mitarbeiterin für den 14. März.
+
+Der Fehler war nicht die Anzeige, sondern dass die Komponente alle Typen gleich
+behandelt hat. Ob ein Typ terminierbar ist, ist eine Eigenschaft des Typs und
+gehört deshalb in die Daten: `content_types.supports_scheduling` (Migration
+0016). Der Editor fragt sie ab, statt es besser zu wissen.
+
+| Typ | Zeitsteuerung | Plätze |
+| --- | --- | --- |
+| Neuigkeiten | ✅ | — |
+| Speisekarte | ✅ | ✅ |
+| Öffnungszeiten | ✅ | ✅ |
+| Team | — | — |
+| Leistungen | — | — |
+
+Dazu ein Constraint: Ein Platz ohne Gültigkeitszeitraum ist sinnlos, also
+verlangt `supports_slots` immer `supports_scheduling`. Diese Kombination lässt
+sich gar nicht erst eintragen.
+
+---
+
+## 22 · Mandantenverwaltung war nur per SQL möglich
+
+Bis hierher gab es für den Admin keine Oberfläche, um Mandanten anzulegen. Die
+Datenbank konnte alles — RLS erlaubt Schreiben auf `tenants` nur der Rolle
+`admin`, `apply_blueprint()` existierte — aber wer einen Kunden onboarden
+wollte, musste SQL schreiben.
+
+Neu unter `/admin`: Mandanten anlegen mit Branchen-Set, Inhaltstypen pro Kunde
+freischalten, Funktionsschalter setzen, Mandanten stilllegen.
+
+Zwei Details, die bewusst so sind:
+
+**Einen Inhaltstyp abschalten löscht keine Einträge.** Ein Typ wird
+abgeschaltet, weil der Kunde ihn nicht mehr braucht — nicht, weil seine Inhalte
+weg sollen. Wird er wieder freigegeben, ist alles noch da.
+
+**Stilllegen statt Löschen.** Ein stillgelegter Mandant liefert nichts mehr über
+die Lese-API; die Kundenwebsite bleibt beim letzten gebauten Stand stehen.
+Nichts wird gelöscht — für den Fall, dass ein Kunde zurückkommt oder noch
+Daten braucht.

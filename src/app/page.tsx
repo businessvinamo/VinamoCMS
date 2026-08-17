@@ -42,8 +42,13 @@ export default async function Uebersicht({
         )}
 
         {istAdmin && (
-          <div className="hinweis gut">
-            Du bist als Admin angemeldet und siehst alle Mandanten.
+          <div className="karte">
+            <h2>Verwaltung</h2>
+            <p className="leise">
+              Du bist als Admin angemeldet. Mandanten anlegen, Inhaltstypen
+              freischalten, Funktionen ein- und ausschalten.
+            </p>
+            <Link href="/admin">Mandanten verwalten</Link>
           </div>
         )}
 
