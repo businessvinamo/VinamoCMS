@@ -77,8 +77,8 @@ beforeAll(async () => {
   userB = b.data.user!.id
 
   const { error: memberFehler } = await admin.from('tenant_members').insert([
-    { tenant_id: tenantA, user_id: userA, role: 'owner' },
-    { tenant_id: tenantB, user_id: userB, role: 'owner' },
+    { tenant_id: tenantA, user_id: userA, role: 'client' },
+    { tenant_id: tenantB, user_id: userB, role: 'client' },
   ])
   if (memberFehler) throw memberFehler
 
@@ -124,7 +124,7 @@ describe('Mandantentrennung', () => {
   it('A kann sich nicht in den Mandanten von B eintragen', async () => {
     const { error } = await alsA
       .from('tenant_members')
-      .insert({ tenant_id: tenantB, user_id: userA, role: 'owner' })
+      .insert({ tenant_id: tenantB, user_id: userA, role: 'client' })
     expect(error).not.toBeNull()
     expect(error!.code).toBe('42501')
   })
@@ -146,7 +146,7 @@ describe('Mandantentrennung', () => {
     const { error } = await alsA.from('invitations').insert({
       email: 'angreifer@vinamo-test.invalid',
       tenant_id: tenantA,
-      role: 'owner',
+      role: 'client',
       grants_platform_admin: true,
     })
     expect(error).not.toBeNull()
@@ -186,38 +186,44 @@ describe('Mandantentrennung', () => {
   })
 })
 
-describe('Rollen innerhalb eines Mandanten', () => {
-  it('ein editor kann niemanden einladen', async () => {
-    const mail = `iso-editor-${Date.now()}@vinamo-test.invalid`
+describe('Grenzen der Rolle client', () => {
+  it('ein client kann sich selbst keine Plattformrechte geben', async () => {
+    // Der einzige Rechteunterschied, der nach der Vereinfachung auf zwei Rollen
+    // noch existiert: Ein Mandanten-Benutzer darf niemals zum admin werden.
+    const { error } = await alsA.from('invitations').insert({
+      email: `iso-eskalation-${Date.now()}@vinamo-test.invalid`,
+      tenant_id: tenantA,
+      role: 'client',
+      grants_platform_admin: true,
+    })
+    expect(error).not.toBeNull()
+    expect(error!.code).toBe('42501')
+  })
+
+  it('ein client darf Zugaenge des eigenen Mandanten verwalten', async () => {
+    const { data } = await alsA.rpc('can_manage_tenant', { p_tenant_id: tenantA })
+    expect(data).toBe(true)
+  })
+
+  it('ein client darf fremde Mandanten nicht verwalten', async () => {
+    const { data } = await alsA.rpc('can_manage_tenant', { p_tenant_id: tenantB })
+    expect(data).toBe(false)
+  })
+
+  it('ein client kann niemanden in einen fremden Mandanten eintragen', async () => {
+    const mail = `iso-fremd-${Date.now()}@vinamo-test.invalid`
     const neu = await admin.auth.admin.createUser({
       email: mail, password: KENNWORT, email_confirm: true,
     })
     if (neu.error) throw neu.error
-    const editorId = neu.data.user!.id
 
-    await admin.from('tenant_members').insert({
-      tenant_id: tenantA, user_id: editorId, role: 'editor',
-    })
-
-    const alsEditor = await anmelden(mail)
-    const { error } = await alsEditor.from('invitations').insert({
-      email: 'kollege@vinamo-test.invalid', tenant_id: tenantA, role: 'editor',
+    const { error } = await alsA.from('tenant_members').insert({
+      tenant_id: tenantB, user_id: neu.data.user!.id, role: 'client',
     })
 
     expect(error).not.toBeNull()
     expect(error!.code).toBe('42501')
 
-    await admin.auth.admin.deleteUser(editorId)
-  })
-
-  it('ein Mandant mit Mitgliedern kann seinen letzten Besitzer nicht verlieren', async () => {
-    const { error } = await admin
-      .from('tenant_members')
-      .update({ role: 'editor' })
-      .eq('tenant_id', tenantA)
-      .eq('user_id', userA)
-
-    expect(error).not.toBeNull()
-    expect(error!.message).toMatch(/Besitzer/)
+    await admin.auth.admin.deleteUser(neu.data.user!.id)
   })
 })
