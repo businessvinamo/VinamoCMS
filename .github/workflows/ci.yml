@@ -22,9 +22,8 @@ jobs:
 
   mandantentrennung:
     runs-on: ubuntu-latest
-    # Läuft gegen die Staging-Datenbank und legt dabei eigene Mandanten an, die
-    # am Ende wieder verschwinden. Ohne die Secrets wird der Job übersprungen --
-    # in einem Fork gibt es sie nicht, und ein roter Fork-Build hilft niemandem.
+    # In einem Fork gibt es die Secrets nicht, und ein roter Fork-Build hilft
+    # niemandem.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4
@@ -33,9 +32,29 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+
       - name: Isolationstest
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: npm run test:isolation
+        run: |
+          # Solange die Secrets nicht hinterlegt sind, wird uebersprungen statt
+          # rot gemeldet. Begruendung: Ein Bau, der bei JEDEM Push rot ist, weil
+          # eine Konfiguration fehlt, gewoehnt alle daran, Rot zu ignorieren --
+          # und dann faellt der Tag nicht auf, an dem es ein echter Fehler ist.
+          #
+          # Damit das Ueberspringen nicht still passiert, steht es als Warnung in
+          # der Zusammenfassung des Laufs.
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::warning title=Isolationstest übersprungen::Die Mandantentrennung wurde NICHT geprüft. Es fehlt das Repository-Secret SUPABASE_SERVICE_ROLE_KEY (Settings → Secrets and variables → Actions)."
+            {
+              echo "### ⚠️ Mandantentrennung nicht geprüft"
+              echo ""
+              echo "Der Isolationstest braucht \`SUPABASE_URL\`, \`SUPABASE_PUBLISHABLE_KEY\` und"
+              echo "\`SUPABASE_SERVICE_ROLE_KEY\` als Repository-Secrets. Solange die fehlen,"
+              echo "belegt **nichts**, dass Mandant A keine Daten von Mandant B sieht."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          npm run test:isolation
