@@ -43,7 +43,7 @@ export default async function Uebersicht({
 
         {istAdmin && (
           <div className="hinweis gut">
-            Du bist als Vinamo-Administrator angemeldet und siehst alle Mandanten.
+            Du bist als Admin angemeldet und siehst alle Mandanten.
           </div>
         )}
 
@@ -57,16 +57,14 @@ export default async function Uebersicht({
           </div>
         ) : (
           <ul className="liste">
-            {mitgliedschaften.map(({ tenant, role }) => (
+            {mitgliedschaften.map(({ tenant }) => (
               <li key={tenant.id}>
                 <Link href={`/t/${tenant.slug}`} className="karte karte-klick">
                   <span className="stapel-eng">
                     <strong>{tenant.name}</strong>
                     <span className="leise mono">{tenant.slug}</span>
                   </span>
-                  <span className="marke-rolle">
-                    {role === 'owner' ? 'Besitzer' : 'Redaktion'}
-                  </span>
+                  <span aria-hidden="true" className="leise">→</span>
                 </Link>
               </li>
             ))}

@@ -76,20 +76,13 @@ export default async function MandantSeite({
             {(mitglieder ?? []).map((m) => (
               <li key={m.user_id} className="zeile">
                 <span className="mono leise">{m.user_id.slice(0, 8)}…</span>
-                <span className="marke-rolle">
-                  {m.role === 'owner' ? 'Besitzer' : 'Redaktion'}
-                </span>
               </li>
             ))}
             {(mitglieder ?? []).length === 0 && (
               <li className="leise">Noch niemand freigeschaltet.</li>
             )}
           </ul>
-          {role === 'owner' || istAdmin ? (
-            <p className="leise">Als Besitzer kannst du weitere Personen einladen.</p>
-          ) : (
-            <p className="leise">Neue Zugänge vergibt der Besitzer dieser Website.</p>
-          )}
+          <Link href={`/t/${tenant.slug}/benutzer`}>Zugänge verwalten</Link>
         </div>
 
         <div className="karte">

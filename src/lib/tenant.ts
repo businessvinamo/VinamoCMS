@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export type TenantRole = 'owner' | 'editor'
+/** Rolle innerhalb eines Mandanten. Alle Mandanten-Benutzer sind gleichberechtigt. */
+export type TenantRole = 'client'
 
 export type Tenant = {
   id: string
@@ -33,7 +34,7 @@ export async function requireUser() {
   return user
 }
 
-/** Ist der Benutzer vinamo_admin? */
+/** Hat der Benutzer die Rolle admin (mandantenübergreifend)? */
 export async function isPlatformAdmin(): Promise<boolean> {
   const supabase = await createClient()
   const { data, error } = await supabase.rpc('is_platform_admin')
@@ -87,8 +88,7 @@ export async function requireTenant(slug: string): Promise<{ tenant: Tenant; rol
     .eq('tenant_id', tenant.id)
     .maybeSingle()
 
-  // Kein Eintrag heisst: vinamo_admin ohne eigene Mitgliedschaft. Der darf lesen,
-  // hat aber keine Mandantenrolle -- das unterscheidet die Oberfläche später,
-  // wenn es um "einladen" geht.
+  // Kein Eintrag heisst: ein Admin ohne eigene Mitgliedschaft in diesem
+  // Mandanten. Der darf trotzdem alles -- can_manage_tenant() deckt beides ab.
   return { tenant: tenant as Tenant, role: (membership?.role as TenantRole) ?? null }
 }

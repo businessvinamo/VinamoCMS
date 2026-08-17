@@ -237,3 +237,14 @@ details.karte[open] > summary::after { content: " ▴"; }
   border-radius: var(--radius); font-weight: 650;
 }
 @media (prefers-color-scheme: dark) { .knopf-link { color: #131327; } }
+
+.zugangsdaten {
+  display: grid; grid-template-columns: auto 1fr; gap: 8px 14px;
+  align-items: center; margin: 4px 0;
+}
+.zugangsdaten code {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  background: var(--flaeche-alt); border: 1px solid var(--linie);
+  border-radius: 6px; padding: 8px 12px; word-break: break-all;
+}
+.startpasswort { font-size: 19px; letter-spacing: 0.06em; font-weight: 600; }

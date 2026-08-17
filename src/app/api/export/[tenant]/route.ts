@@ -33,11 +33,10 @@ export async function GET(
     .from('tenants').select('*').eq('slug', slug).maybeSingle()
   if (!mandant) return NextResponse.json({ error: 'Unbekannter Mandant.' }, { status: 404 })
 
-  // Export darf nur, wer den Mandanten besitzt -- oder Vinamo selbst.
-  const { data: darf } = await supabase.rpc('is_tenant_owner', { p_tenant_id: mandant.id })
+  const { data: darf } = await supabase.rpc('can_manage_tenant', { p_tenant_id: mandant.id })
   if (darf !== true) {
     return NextResponse.json(
-      { error: 'Nur der Besitzer dieser Website kann die Daten exportieren.' },
+      { error: 'Du kannst die Daten dieser Website nicht exportieren.' },
       { status: 403 },
     )
   }

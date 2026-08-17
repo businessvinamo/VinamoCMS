@@ -22,7 +22,7 @@ export default async function ProtokollSeite({
 }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   await requireUser()
-  const { tenant, role } = await requireTenant(slug)
+  const { tenant } = await requireTenant(slug)
   const supabase = await createClient()
 
   const [{ data: protokoll }, { data: zustellungen }] = await Promise.all([
@@ -95,7 +95,7 @@ export default async function ProtokollSeite({
           )}
         </div>
 
-        {role === 'owner' && (
+        {(
           <div className="karte">
             <h2>Deine Daten</h2>
             <p className="leise">

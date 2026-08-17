@@ -30,7 +30,7 @@ Begründungen.
 | Admin-Backend | TypeScript, Next.js 15 (App Router) |
 | Datenbank, Auth | Supabase, Region **Zürich** (`eu-central-2`) |
 | Mandantentrennung | `tenant_id` je Tabelle, erzwungen durch Row Level Security |
-| Anmeldung | Magic Link, kein Passwort |
+| Anmeldung | E-Mail und Passwort, Konten legt ein bestehender Benutzer an |
 
 ## Einrichten
 
@@ -59,6 +59,17 @@ braucht eine Node.js-Laufzeit und kann **keine** statische Website sein.
 ## Architekturentscheide
 
 Warum es so gebaut ist und nicht anders: [`docs/entscheide.md`](docs/entscheide.md).
+
+## Rollen
+
+| Rolle | Wer | Darf |
+| --- | --- | --- |
+| `admin` | Vinamo | Alles, mandantenübergreifend — Inhaltstypen definieren, Mandanten anlegen, Zugänge überall |
+| `client` | Kunde | Alles im eigenen Mandanten — Inhalte pflegen und weitere Zugänge anlegen |
+
+**Es gibt keine Selbstregistrierung.** Konten legt ein bestehender Benutzer an;
+das Startpasswort wird einmalig angezeigt und muss beim ersten Anmelden geändert
+werden.
 
 ## Öffentliche Lese-API
 

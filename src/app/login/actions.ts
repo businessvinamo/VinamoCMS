@@ -1,55 +1,48 @@
 'use server'
 
-import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export type LoginErgebnis = { status: 'idle' | 'gesendet' | 'fehler'; meldung?: string }
+export type LoginErgebnis = { status: 'idle' | 'fehler'; meldung?: string }
 
 /**
- * Anmeldung per Magic Link.
+ * Anmeldung mit E-Mail und Passwort.
  *
- * Bewusst kein Passwort: Kunden pflegen ihre Seite selten, vergessen Passwörter
- * zuverlässig und legen sich sonst "vinamo2024" zurecht. Ein Link an die
- * bekannte Adresse ist sicherer und für die Zielgruppe der einfachere Weg.
- *
- * Berechtigt wird niemand hier -- wer keine offene Einladung hat, bekommt zwar
- * ein Konto, aber null Mandanten und sieht eine leere Übersicht.
+ * Die Fehlermeldung ist absichtlich für alle Fälle dieselbe -- falsches
+ * Passwort, unbekannte Adresse, gesperrtes Konto. Eine Unterscheidung würde
+ * verraten, welche Adressen bei Vinamo Kunde sind.
  */
-export async function anmeldenMitLink(
+export async function anmelden(
   _bisher: LoginErgebnis,
   formular: FormData,
 ): Promise<LoginErgebnis> {
   const email = String(formular.get('email') ?? '').trim().toLowerCase()
-  const weiter = String(formular.get('weiter') ?? '/')
+  const passwort = String(formular.get('passwort') ?? '')
+  const rohWeiter = String(formular.get('weiter') ?? '/')
 
-  if (!email || !email.includes('@')) {
-    return { status: 'fehler', meldung: 'Bitte eine gültige E-Mail-Adresse eingeben.' }
+  if (!email || !passwort) {
+    return { status: 'fehler', meldung: 'Bitte E-Mail-Adresse und Passwort eingeben.' }
   }
 
-  const kopf = await headers()
-  const herkunft =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (kopf.get('x-forwarded-host')
-      ? `https://${kopf.get('x-forwarded-host')}`
-      : 'http://localhost:3000')
-
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${herkunft}/auth/confirm?weiter=${encodeURIComponent(weiter)}`,
-    },
-  })
+  const { error } = await supabase.auth.signInWithPassword({ email, password: passwort })
 
   if (error) {
-    // Der Grund geht ins Serverprotokoll, nicht an den Browser: Ob eine Adresse
-    // bekannt ist, verrät, wer Kunde bei Vinamo ist.
-    console.error('[login] signInWithOtp fehlgeschlagen', error.message)
+    console.error('[login] fehlgeschlagen für', email, '-', error.message)
     return {
       status: 'fehler',
-      meldung: 'Der Link konnte nicht verschickt werden. Bitte in einer Minute erneut versuchen.',
+      meldung: 'E-Mail-Adresse oder Passwort stimmt nicht.',
     }
   }
 
-  return { status: 'gesendet' }
+  // Nur seiteninterne Ziele, sonst wäre ?weiter=https://… eine offene
+  // Weiterleitung mit echter vinamo.ch-Adresse -- ideal für Phishing.
+  const weiter = rohWeiter.startsWith('/') && !rohWeiter.startsWith('//') ? rohWeiter : '/'
+  redirect(weiter)
+}
+
+export async function abmelden(): Promise<void> {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
 }

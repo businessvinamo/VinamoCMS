@@ -248,3 +248,73 @@ Grundlage der Vorschau. Ohne Schutz wäre das ein Leck: Jeder könnte
 vorbereitete Aktionen und künftige Preise abrufen, indem er `at` in die Zukunft
 setzt. Die Route verlangt dafür `PREVIEW_TOKEN` und antwortet in dem Fall mit
 `no-store`.
+
+---
+
+## 16 · Passwort statt Magic Link, und keine Selbstregistrierung
+
+Ersetzt Entscheid 5. Auf Wunsch von Kevin, nach Abwägung der Gegenargumente.
+
+**Anmeldung:** E-Mail und Passwort. Der Magic Link ist raus.
+
+Die Gegenargumente zum Magic Link, die den Ausschlag gaben: Die Mail kommt aufs
+Handy, gearbeitet wird am Laptop — der Link öffnet sich am falschen Gerät. Dazu
+Spam-Ordner, Zustellverzögerung, und Firmen-Mailserver, die Links zur
+Virenprüfung vorab anklicken und den Einmal-Token dabei verbrauchen.
+
+Was wir dafür in Kauf nehmen: einen zweiten Anmeldeweg (Passwort vergessen),
+der selbst wieder über E-Mail läuft.
+
+**Konten entstehen ausschliesslich durch einen bestehenden Benutzer.** Es gibt
+keine Registrierungsseite. Wer einen Zugang anlegt, bekommt einmalig ein
+Startpasswort angezeigt, das er weitergibt; gespeichert wird es nie.
+
+Warum das mehr ist als eine Bequemlichkeit: Ohne offene Registrierung gibt es
+keine Seite, über die sich herausfinden liesse, welche Adressen bei Vinamo Kunde
+sind. Der frühere Einladungsweg blieb als Bootstrap erhalten — der Trigger
+`handle_new_user` löst offene Einladungen weiterhin ein, wenn ein Konto entsteht.
+
+**Erzwungener Wechsel beim ersten Anmelden.** Der Merker steht in
+`app_metadata`, nicht in `user_metadata`: Letzteres darf der Benutzer selbst
+überschreiben und könnte den Wechsel damit überspringen. `app_metadata` setzt
+nur der Service-Schlüssel. Die Middleware leitet um, solange der Merker steht.
+
+**Passwortregeln:** nur Mindestlänge (10) und eine Sperrliste naheliegender
+Wörter — keine erzwungenen Zeichenklassen. Die erzeugen nachweislich
+`Passwort1!`, also ein schlechteres Passwort als eine lange Wortfolge.
+
+**Startpasswort:** 20 Zeichen aus einem Alphabet ohne verwechselbare Zeichen
+(kein 0/O, kein 1/l/I), in Vierergruppen. Der Kunde tippt das vom Handy ab, und
+„war das eine Null oder ein O" ist ein Support-Anruf.
+
+---
+
+## 17 · Zwei Rollen: admin und client
+
+Vorher: `vinamo_admin`, `owner`, `editor`. Jetzt:
+
+| Rolle | Wer | Darf |
+| --- | --- | --- |
+| `admin` | Vinamo | Alles, mandantenübergreifend. Inhaltstypen definieren, Mandanten anlegen, Zugänge überall |
+| `client` | Kunde | Alles innerhalb des eigenen Mandanten: Inhalte pflegen und weitere Zugänge anlegen |
+
+`editor` entfällt. Braucht ein Kunde eine zweite Person, bekommt sie einen
+eigenen `client`-Zugang, keine abgestufte Rolle.
+
+Zwei Dinge fielen dadurch weg:
+
+- `is_tenant_owner()` wäre identisch mit `is_tenant_member()` geworden. Statt
+  einer sinnlosen Verdopplung heisst die Funktion jetzt `can_manage_tenant()` —
+  ein Name, der die Frage stellt statt die Rolle zu nennen. Käme später doch eine
+  reine Leserolle, ändert sich nur diese eine Funktion, nicht zwanzig
+  Richtlinien.
+- `assert_tenant_has_owner()` ist gegenstandslos. Die Regel schützte davor, dass
+  ein Mandant nur noch `editor`-Konten hat und niemand mehr einladen kann.
+  Diesen Zustand gibt es nicht mehr.
+
+Der einzige verbliebene Rechteunterschied: Ein `client` kann niemals
+Plattformrechte vergeben. Das erzwingt die `WITH CHECK`-Klausel auf
+`invitations`.
+
+Der Enum `tenant_role` bleibt mit dem einzigen Wert `client` bestehen — damit
+eine spätere abgestufte Rolle keine Schemaänderung an `tenant_members` braucht.
