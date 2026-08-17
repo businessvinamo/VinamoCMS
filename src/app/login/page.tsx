@@ -16,7 +16,7 @@ export default function LoginSeite({
   const [ergebnis, absenden, laeuft] = useActionState(anmelden, START)
 
   return (
-    <main className="huelle">
+    <main className="huelle huelle-schmal">
       <Marke />
       <div className="stapel">
         <h1>Anmelden</h1>

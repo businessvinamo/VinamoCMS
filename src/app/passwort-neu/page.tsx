@@ -16,7 +16,7 @@ export default function PasswortNeuSeite({
   const [ergebnis, absenden, laeuft] = useActionState(setzeNeuesPasswort, START)
 
   return (
-    <main className="huelle">
+    <main className="huelle huelle-schmal">
       <Marke />
       <div className="stapel">
         <h1>{erstmalig ? 'Passwort festlegen' : 'Neues Passwort'}</h1>

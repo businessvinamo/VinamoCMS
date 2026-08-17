@@ -11,7 +11,7 @@ export default function PasswortVergessenSeite() {
   const [ergebnis, absenden, laeuft] = useActionState(sendeZuruecksetzen, START)
 
   return (
-    <main className="huelle">
+    <main className="huelle huelle-schmal">
       <Marke />
       <div className="stapel">
         <h1>Passwort vergessen</h1>

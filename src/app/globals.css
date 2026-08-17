@@ -25,15 +25,16 @@ html, body { margin: 0; padding: 0; }
 body {
   background: var(--grund);
   color: var(--text);
-  font-family: var(--font-text), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-text, ui-sans-serif), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3 { margin: 0; line-height: 1.2; letter-spacing: -0.015em; }
-h1 { font-size: 26px; font-weight: 800; }
+h1 { font-size: 27px; font-weight: 800; letter-spacing: -0.02em; }
 h2 { font-size: 19px; font-weight: 700; }
+label { display: block; }
 h3 { font-size: 16px; font-weight: 700; }
 p { margin: 0; }
 
@@ -45,13 +46,21 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 }
 
 .huelle { max-width: 720px; margin: 0 auto; padding: 24px 20px 64px; }
+
+/*
+ * Anmeldung und Passwortseiten. Schmaler als der Rest: Ein Formular mit zwei
+ * Feldern in voller Inhaltsbreite laesst die Felder auf dem Desktop verloren
+ * wirken und zwingt das Auge unnoetig weit nach rechts.
+ */
+.huelle-schmal { max-width: 400px; }
 .stapel { display: flex; flex-direction: column; gap: 16px; }
 .stapel-eng { display: flex; flex-direction: column; gap: 8px; }
 
 .marke { display: flex; align-items: center; gap: 10px; padding: 20px 0; }
 .marke span {
-  font-size: 12px; letter-spacing: 0.26em; text-transform: uppercase;
-  color: var(--text-leise); font-weight: 600;
+  font-family: var(--font-wortmarke, inherit), inherit;
+  font-size: 13px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--text); font-weight: 500;
 }
 
 .karte {
@@ -82,12 +91,27 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 
 label { font-weight: 600; font-size: 15px; }
 
-input[type="email"] {
-  width: 100%; min-height: var(--touch);
-  padding: 12px 14px; font-size: 16px; /* 16px verhindert Zoom beim Fokus auf iOS */
-  border: 1px solid var(--linie); border-radius: var(--radius);
-  background: var(--flaeche); color: var(--text);
+/*
+ * Alle Texteingaben in EINER Regel statt einer Liste einzelner Typen.
+ * Vorher fehlte type="password" und rutschte in die Browser-Standarddarstellung.
+ * :not() deckt auch kuenftige Typen ab, ohne dass jemand daran denken muss.
+ */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]),
+textarea,
+select {
+  width: 100%;
+  min-height: var(--touch);
+  padding: 12px 14px;
+  font-size: 16px; /* 16px verhindert den Zoom beim Fokus auf iOS */
+  font-family: inherit;
+  line-height: 1.5;
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  background: var(--flaeche);
+  color: var(--text);
 }
+textarea { min-height: auto; resize: vertical; }
+input::placeholder, textarea::placeholder { color: var(--text-leise); opacity: 0.7; }
 
 button {
   min-height: var(--touch);
@@ -128,24 +152,7 @@ button:hover { background: #4A2FE0; }
 
 /* --- Editor ---------------------------------------------------------------- */
 
-textarea, select {
-  width: 100%;
-  padding: 12px 14px;
-  font-size: 16px;
-  font-family: inherit;
-  line-height: 1.5;
-  border: 1px solid var(--linie);
-  border-radius: var(--radius);
-  background: var(--flaeche);
-  color: var(--text);
-}
-select { min-height: var(--touch); }
-input[type="date"], input[type="datetime-local"], input[type="number"], input[type="text"] {
-  width: 100%; min-height: var(--touch);
-  padding: 12px 14px; font-size: 16px; font-family: inherit;
-  border: 1px solid var(--linie); border-radius: var(--radius);
-  background: var(--flaeche); color: var(--text);
-}
+/* Eingabefelder sind oben zentral gestylt. */
 
 .sprachleiste {
   display: flex; gap: 6px; overflow-x: auto;
