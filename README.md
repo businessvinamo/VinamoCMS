@@ -9,18 +9,19 @@ liegt in `tenants` oder in `tenant_feature_flags`.
 
 ## Stand
 
-Phase 1 von 7 steht. Siehe [`docs/umsetzungsplan.html`](docs/umsetzungsplan.html)
-für den vollständigen Plan.
+Alle sieben Phasen sind umgesetzt. Siehe [`docs/umsetzungsplan.html`](docs/umsetzungsplan.html)
+für den ursprünglichen Plan und [`docs/entscheide.md`](docs/entscheide.md) für die
+Begründungen.
 
 | Phase | Inhalt | Status |
 | --- | --- | --- |
 | 0 | Gerüst, Datenbank, CI | ✅ |
 | 1 | Mandanten, Rollen, RLS, Isolationstest, Anmeldung | ✅ |
-| 2 | Inhaltstyp-Engine, Editor, Entwurf/Veröffentlichung | offen |
-| 3 | Mehrsprachigkeit, Terminierung, Vorschau, Lese-API | offen |
-| 4 | Medien | offen |
-| 5 | Wiederholgruppen, Speisekarte, Branchen-Baukasten | offen |
-| 6 | Betrieb: Audit-UI, Export, Webhook-Protokoll | offen |
+| 2 | Inhaltstyp-Engine, Editor, Entwurf/Veröffentlichung | ✅ |
+| 3 | Mehrsprachigkeit, Terminierung, Lese-API | ✅ |
+| 4 | Medien | ✅ |
+| 5 | Wiederholgruppen, Speisekarte, Branchen-Baukasten | ✅ |
+| 6 | Betrieb: Protokoll, Export, Webhooks | ✅ |
 
 ## Stack
 
@@ -53,6 +54,20 @@ siehe `20260817090500_allow_empty_tenant.sql` als Beispiel.
 ## Architekturentscheide
 
 Warum es so gebaut ist und nicht anders: [`docs/entscheide.md`](docs/entscheide.md).
+
+## Öffentliche Lese-API
+
+```
+GET /api/v1/<mandant>/<sprache>/<inhaltstyp>
+```
+
+Liefert nur veröffentlichte und zum Abrufzeitpunkt gültige Inhalte, Übersetzungen
+bereits mit der Hauptsprache verschmolzen. Das Frontend prüft nie selbst, ob
+etwas gilt. Antworten tragen ein `ETag`; die Cache-Dauer endet an der nächsten
+Zeitgrenze der enthaltenen Inhalte.
+
+Mit `?at=<zeitpunkt>&token=<PREVIEW_TOKEN>` liefert dieselbe Route den Stand zu
+einem beliebigen Zeitpunkt — die Grundlage der Vorschau.
 
 ## Brand
 
