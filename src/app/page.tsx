@@ -48,7 +48,10 @@ export default async function Uebersicht({
               Du bist als Admin angemeldet. Mandanten anlegen, Inhaltstypen
               freischalten, Funktionen ein- und ausschalten.
             </p>
-            <Link href="/admin">Mandanten verwalten</Link>
+            <div className="aktionen">
+              <Link href="/admin" className="aktion">Mandanten verwalten</Link>
+              <Link href="/admin/benutzer" className="aktion">Benutzer verwalten</Link>
+            </div>
           </div>
         )}
 

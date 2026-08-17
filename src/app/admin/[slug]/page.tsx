@@ -45,9 +45,9 @@ export default async function MandantVerwalten({
           </p>
         </div>
 
-        <div className="zeile">
-          <Link href={`/t/${mandant.slug}`}>Inhalte ansehen</Link>
-          <Link href={`/t/${mandant.slug}/benutzer`}>Zugänge</Link>
+        <div className="aktionen">
+          <Link href={`/t/${mandant.slug}`} className="aktion">Inhalte ansehen</Link>
+          <Link href={`/t/${mandant.slug}/benutzer`} className="aktion">Zugänge</Link>
         </div>
 
         <MandantSchalter

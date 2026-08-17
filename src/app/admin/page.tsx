@@ -51,6 +51,9 @@ export default async function AdminSeite() {
           ))}
         </ul>
 
+        <div className="aktionen">
+          <Link href="/admin/benutzer" className="aktion">Alle Benutzer verwalten</Link>
+        </div>
         <Link href="/admin/neu" className="knopf-link">Neuen Mandanten anlegen</Link>
       </div>
     </main>

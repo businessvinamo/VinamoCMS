@@ -82,7 +82,7 @@ export default async function MandantSeite({
               <li className="leise">Noch niemand freigeschaltet.</li>
             )}
           </ul>
-          <Link href={`/t/${tenant.slug}/benutzer`}>Zugänge verwalten</Link>
+          <Link href={`/t/${tenant.slug}/benutzer`} className="aktion">Zugänge verwalten</Link>
         </div>
 
         <div className="karte">
@@ -91,7 +91,7 @@ export default async function MandantSeite({
             Wer wann was veröffentlicht hat — und ob die Website danach
             aktualisiert wurde.
           </p>
-          <Link href={`/t/${tenant.slug}/protokoll`}>Protokoll ansehen</Link>
+          <Link href={`/t/${tenant.slug}/protokoll`} className="aktion">Protokoll ansehen</Link>
         </div>
 
         <div className="karte">

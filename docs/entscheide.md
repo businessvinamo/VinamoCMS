@@ -453,3 +453,76 @@ weg sollen. Wird er wieder freigegeben, ist alles noch da.
 die Lese-API; die Kundenwebsite bleibt beim letzten gebauten Stand stehen.
 Nichts wird gelöscht — für den Fall, dass ein Kunde zurückkommt oder noch
 Daten braucht.
+
+---
+
+## 23 · Rechte pro Benutzer statt weiterer Rollen
+
+Bisher durfte jeder Mandanten-Benutzer alles im eigenen Mandanten — Inhalte
+pflegen und Zugänge anlegen. Für die Wirtin richtig, für die Aushilfe, die nur
+das Tagesmenü tippt, zu viel.
+
+**Alternative:** `editor` wieder einführen.
+**Warum nicht:** Rollen sind grobkörnig. Sobald ein Kunde jemanden will, der Team
+und News pflegt, aber keine Preise anfasst, braucht es die nächste Rolle. Nach
+drei Kunden hat man fünf Rollen, die niemand mehr auseinanderhält.
+
+Stattdessen zwei Angaben an der Mitgliedschaft (Migration 0017):
+
+| Spalte | Bedeutung |
+| --- | --- |
+| `can_manage_users` | Darf Zugänge anlegen, entfernen, Passwörter zurücksetzen |
+| `allowed_content_types` | Welche Inhaltstypen. `NULL` heisst alle freigeschalteten — der Normalfall |
+
+Die Einschränkung steht in der Datenbank, nicht in der Oberfläche:
+`can_edit_content_type()` und `can_edit_entry()` tragen die Richtlinien auf
+`entries` und `entry_translations`, und `publish_entry()` prüft sie ebenfalls —
+sonst könnte ein eingeschränkter Benutzer zwar nichts bearbeiten, aber alles
+veröffentlichen.
+
+Bestehende Mitgliedschaften bekamen `can_manage_users = true`. Ein Rechtemodell
+einzuführen darf niemandem still etwas wegnehmen.
+
+In der Oberfläche gibt es bewusst **keine Rollennamen**, sondern Haken auf das,
+was jemand tatsächlich tun darf. Ein Name wie „Redaktion" beantwortet die Frage
+„darf sie an die Preise" nämlich nicht — man muss trotzdem nachschlagen.
+
+---
+
+## 24 · Benutzerlisten ohne Service-Schlüssel
+
+Die Zugangsseiten lasen alle Auth-Konten mit dem Service-Schlüssel und filterten
+danach in TypeScript. Zwei Probleme: Der Service-Schlüssel umgeht RLS
+vollständig — die Grenze lag im Anwendungscode statt in der Datenbank, genau das,
+was dieses Projekt sonst überall vermeidet. Und bei tausend Konten holt man
+tausend, um zwei anzuzeigen.
+
+Ersetzt durch `tenant_member_accounts(tenant_id)` und `all_user_accounts()`
+(Migration 0018). Beide prüfen ihre Berechtigung selbst und geben nur zurück,
+was der Aufrufer sehen darf.
+
+---
+
+## 25 · Die Fehlergrenze hat die Mobilprüfung getäuscht
+
+Beim Prüfen der Darstellung auf 390 px meldete das Skript für `/admin/benutzer`
+„kein Quer-Scroll, Touch-Ziele ok". Tatsächlich warf die Seite einen Fehler, die
+Fehlergrenze aus Eintrag 20 fing ihn ab — und das Skript vermass die tadellos
+gestaltete **Fehlerseite**.
+
+Eine gute Fehlerbehandlung macht Fehler unsichtbar. Genau deshalb muss jede
+automatische Prüfung zuerst feststellen, ob sie überhaupt die gemeinte Seite vor
+sich hat. Das Skript erkennt die Fehlerseite jetzt und meldet sie als Fehler,
+statt sie zu vermessen.
+
+**Gefundene und behobene Mängel bei 390 px:**
+
+| Element | Vorher | Jetzt |
+| --- | --- | --- |
+| Zurück-Links oben | 22 px | 44 px |
+| Navigationslinks in Karten | 26 px | 44 px |
+| Schalter-Chips | 38 px | 44 px |
+| Kleine Knöpfe | 40 px | 44 px |
+| Gesperrte Knöpfe | sahen aktiv aus | 40 % Deckkraft |
+
+Kein Quer-Scroll auf keiner der sechs Seiten.

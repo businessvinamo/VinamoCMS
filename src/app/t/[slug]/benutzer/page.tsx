@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { Marke } from '@/components/Marke'
 import { Zugaenge } from '@/components/Zugaenge'
-import { adminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { requireTenant, requireUser } from '@/lib/tenant'
 import { entferneZugang, legeZugangAn, setzeStartpasswortNeu } from './actions'
@@ -16,23 +15,18 @@ export default async function BenutzerSeite({
   const { tenant } = await requireTenant(slug)
   const supabase = await createClient()
 
-  const { data: mitglieder } = await supabase
-    .from('tenant_members')
-    .select('user_id, created_at')
-    .eq('tenant_id', tenant.id)
-    .order('created_at')
+  // tenant_member_accounts() prüft selbst, dass der Aufrufer zum Mandanten
+  // gehört, und gibt nur dessen Mitglieder zurück. Vorher las diese Seite ALLE
+  // Auth-Konten mit dem Service-Schlüssel und filterte danach im Code.
+  const { data: konten } = await supabase.rpc('tenant_member_accounts', {
+    p_tenant_id: tenant.id,
+  })
 
-  // E-Mail-Adressen stehen in auth.users und sind über RLS nicht erreichbar.
-  // Deshalb hier der Service-Schlüssel -- erst NACH der Prüfung oben, dass der
-  // Aufrufer zu diesem Mandanten gehört, und beschränkt auf dessen Mitglieder.
-  const admin = adminClient()
-  const { data: alle } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
-  const adressen = new Map((alle?.users ?? []).map((u) => [u.id, u.email ?? '']))
-
-  const liste = (mitglieder ?? []).map((m) => ({
-    userId: m.user_id,
-    email: adressen.get(m.user_id) ?? 'unbekannt',
-    binIchSelbst: m.user_id === ich.id,
+  type Konto = { user_id: string; email: string | null }
+  const liste = ((konten ?? []) as Konto[]).map((k) => ({
+    userId: k.user_id,
+    email: k.email ?? 'unbekannt',
+    binIchSelbst: k.user_id === ich.id,
   }))
 
   return (
