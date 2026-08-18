@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { pruefePasswort } from '@/lib/passwort'
-import { adminClient } from '@/lib/supabase/admin'
+import { adminClientOderNull } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
 export type PasswortErgebnis = { status: 'idle' | 'fehler'; meldung?: string }
@@ -44,9 +44,16 @@ export async function setzeNeuesPasswort(
   // Merker löschen. Nur mit dem Service-Schlüssel möglich -- app_metadata ist für
   // den Benutzer selbst schreibgeschützt, sonst könnte er den erzwungenen
   // Wechsel einfach überspringen.
-  await adminClient().auth.admin.updateUserById(user.id, {
-    app_metadata: { muss_passwort_aendern: false },
-  })
+  // Schlägt das fehl, ist das Passwort trotzdem gesetzt -- der Benutzer landet
+  // beim nächsten Aufruf nur nochmals hier. Eine Fehlerseite wäre die schlechtere
+  // Antwort: Sie sähe aus, als sei das neue Passwort nicht gespeichert worden.
+  const admin = adminClientOderNull()
+  if (admin) {
+    const { error: merker } = await admin.auth.admin.updateUserById(user.id, {
+      app_metadata: { muss_passwort_aendern: false },
+    })
+    if (merker) console.error('[passwort] Merker nicht gelöscht', merker.message)
+  }
 
   redirect('/login?zurueckgesetzt=1')
 }

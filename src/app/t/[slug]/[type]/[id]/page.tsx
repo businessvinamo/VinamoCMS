@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Editor } from '@/components/Editor'
 import { Kopfzeile } from '@/components/Kopfzeile'
-import { anzeigezustand, ladeEintrag, ladeInhaltstypen } from '@/lib/content'
+import { anzeigezustand, ladeEintrag, ladeBearbeitbareInhaltstypen } from '@/lib/content'
 import { requireTenant, requireUser } from '@/lib/tenant'
 import { EintragAktionen } from '@/components/EintragAktionen'
 import { archiviere, loescheEintrag, speichereEntwurf, stelleLetzteVersionWiederHer, veroeffentliche } from '../actions'
@@ -16,7 +16,7 @@ export default async function EditorSeite({
   const nutzer = await requireUser()
   const { tenant } = await requireTenant(slug)
 
-  const typen = await ladeInhaltstypen(tenant.id)
+  const typen = await ladeBearbeitbareInhaltstypen(tenant.id)
   const typ = typen.find((t) => t.key === type)
   if (!typ) redirect(`/t/${slug}`)
 

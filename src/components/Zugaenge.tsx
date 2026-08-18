@@ -6,13 +6,15 @@ import type { ZugangErgebnis } from '@/app/t/[slug]/benutzer/actions'
 type Eintrag = { userId: string; email: string; binIchSelbst: boolean }
 
 export function Zugaenge({
-  tenantSlug, liste, anlegen, zuruecksetzen, entfernen,
+  tenantSlug, liste, darfVerwalten, anlegen, zuruecksetzen, entfernen,
 }: {
   tenantSlug: string
   liste: Eintrag[]
+  /** Ohne dieses Recht bleibt die Liste sichtbar, aber ohne Knöpfe. */
+  darfVerwalten: boolean
   anlegen: (tenantSlug: string, formular: FormData) => Promise<ZugangErgebnis>
   zuruecksetzen: (tenantSlug: string, userId: string) => Promise<ZugangErgebnis>
-  entfernen: (tenantSlug: string, userId: string) => Promise<void>
+  entfernen: (tenantSlug: string, userId: string) => Promise<ZugangErgebnis>
 }) {
   const [ergebnis, setErgebnis] = useState<ZugangErgebnis | null>(null)
   const [laeuft, starte] = useTransition()
@@ -67,7 +69,7 @@ export function Zugaenge({
                 {e.binIchSelbst && <span className="leise">Das bist du</span>}
               </span>
             </div>
-            {!e.binIchSelbst && (
+            {!e.binIchSelbst && darfVerwalten && (
               <div className="zeile" style={{ gap: 8, justifyContent: 'flex-start' }}>
                 <button type="button" className="knopf-zweit" disabled={laeuft}
                         onClick={() => starte(async () => {
@@ -78,8 +80,7 @@ export function Zugaenge({
                 <button type="button" className="knopf-klein knopf-weg" disabled={laeuft}
                         onClick={() => starte(async () => {
                           if (!confirm(`Zugang von ${e.email} wirklich entfernen?`)) return
-                          await entfernen(tenantSlug, e.userId)
-                          setErgebnis(null)
+                          setErgebnis(await entfernen(tenantSlug, e.userId))
                         })}>
                   Entfernen
                 </button>
@@ -89,6 +90,15 @@ export function Zugaenge({
         ))}
       </ul>
 
+      {!darfVerwalten && (
+        <p className="leise">
+          Du siehst, wer Zugang hat. Zugänge anlegen, entfernen und Passwörter
+          zurücksetzen darf nur, wer dafür freigeschaltet ist — melde dich bei
+          Vinamo oder bei jemandem mit diesem Recht.
+        </p>
+      )}
+
+      {darfVerwalten && (
       <form
         className="karte"
         action={(formular) => starte(async () => {
@@ -109,6 +119,7 @@ export function Zugaenge({
           {laeuft ? 'Wird angelegt …' : 'Zugang anlegen'}
         </button>
       </form>
+      )}
     </div>
   )
 }

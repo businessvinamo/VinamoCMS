@@ -2,13 +2,17 @@
 
 import { revalidatePath } from 'next/cache'
 import { erzeugeStartpasswort } from '@/lib/benutzer'
-import { adminClient } from '@/lib/supabase/admin'
+import { adminClientOderNull } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { requireTenant } from '@/lib/tenant'
 
 export type ZugangErgebnis =
   | { ok: true; email: string; startpasswort: string }
   | { ok: false; meldung: string }
+
+/** Fehlender Service-Schlüssel ist ein Betriebsproblem, kein Bedienfehler. */
+const KONFIGURATION_FEHLT =
+  'Zugänge lassen sich gerade nicht verwalten — dem Server fehlt eine Einstellung. Bitte bei Vinamo melden.'
 
 /**
  * Zugang anlegen.
@@ -44,7 +48,8 @@ export async function legeZugangAn(
     return { ok: false, meldung: 'Du kannst für diese Website keine Zugänge anlegen.' }
   }
 
-  const admin = adminClient()
+  const admin = adminClientOderNull()
+  if (!admin) return { ok: false, meldung: KONFIGURATION_FEHLT }
   const startpasswort = erzeugeStartpasswort()
 
   // Gibt es die Adresse schon? Dann kein neues Konto, nur Zugang zu diesem
@@ -121,7 +126,8 @@ export async function setzeStartpasswortNeu(
     return { ok: false, meldung: 'Du kannst für diese Website kein Passwort zurücksetzen.' }
   }
 
-  const admin = adminClient()
+  const admin = adminClientOderNull()
+  if (!admin) return { ok: false, meldung: KONFIGURATION_FEHLT }
 
   // Gehört die Person überhaupt zu diesem Mandanten? Ohne diese Prüfung liesse
   // sich mit einer fremden Benutzerkennung das Passwort beliebiger Konten
@@ -154,13 +160,28 @@ export async function setzeStartpasswortNeu(
   return { ok: true, email: benutzer.user.email ?? '', startpasswort }
 }
 
-export async function entferneZugang(tenantSlug: string, userId: string): Promise<void> {
+export async function entferneZugang(
+  tenantSlug: string, userId: string,
+): Promise<ZugangErgebnis> {
   const { tenant } = await requireTenant(tenantSlug)
   const supabase = await createClient()
 
-  // Über das Token des Aufrufers, damit RLS greift.
-  await supabase.from('tenant_members').delete()
+  // Über das Token des Aufrufers, damit RLS greift -- und mit Rückmeldung.
+  // Vorher gab diese Aktion void zurück: Wem das Recht fehlte, für den passierte
+  // beim Klick auf „Entfernen" sichtbar gar nichts. Row Level Security hielt
+  // stand, aber ein stiller Nicht-Effekt ist die schlechteste Antwort auf eine
+  // fehlende Berechtigung.
+  const { data: geloescht, error } = await supabase.from('tenant_members').delete()
     .eq('tenant_id', tenant.id).eq('user_id', userId)
+    .select('user_id')
+
+  if (error) {
+    console.error('[zugang] entfernen', error.message)
+    return { ok: false, meldung: 'Der Zugang konnte nicht entfernt werden.' }
+  }
+  if (!geloescht?.length) {
+    return { ok: false, meldung: 'Dafür fehlt dir die Berechtigung.' }
+  }
 
   await supabase.rpc('log_audit', {
     p_tenant_id: tenant.id, p_action: 'member.removed',
@@ -168,4 +189,5 @@ export async function entferneZugang(tenantSlug: string, userId: string): Promis
   })
 
   revalidatePath(`/t/${tenantSlug}/benutzer`)
+  return { ok: true, email: '', startpasswort: '' }
 }

@@ -62,10 +62,15 @@ man vergessen kann — und dann baut seine Website nie neu.
 
 ## Sicherheit und Betrieb
 
-### Kein Rate-Limit auf der Anmeldung
-Passwörter lassen sich unbegrenzt durchprobieren. Supabase bremst grob, das
-Admin selbst gar nicht. Bei einem Konto, das alle Kundendaten sieht, gehört das
-nachgezogen.
+### ~~Kein Rate-Limit auf der Anmeldung~~ · erledigt am 18.08.2026
+Gemessen: zwölf falsche Passwörter, zwölfmal dieselbe sofortige Antwort, keine
+Sperre — Supabase bremste hier gar nicht. Behoben mit Migration 0020: zehn
+Fehlversuche je E-Mail-Adresse, dann eine Viertelstunde Pause. Die Prüfung steht
+vor dem Anmeldeversuch, nicht danach.
+
+Bleibt offen: Der Zähler läuft nach E-Mail-Adresse. Wer die Adresse eines Kunden
+kennt, kann ihn vorübergehend aussperren. Bewusst in Kauf genommen — eine Sperre
+nach IP träfe alle Kunden gleichzeitig, weil alle Anfragen vom Server kommen.
 
 ### Verweise werden nicht mitgeschrieben
 `entry_references` existiert als Tabelle, wird aber von keiner Stelle befüllt.
@@ -78,7 +83,7 @@ nicht heraus. Die Kundenwebsite kann also keine Weiterleitung bauen, und eine
 Umbenennung erzeugt weiterhin einen 404.
 
 ### Isolationstest läuft nicht
-18 Fälle geschrieben, aber die Repository-Secrets fehlen. Solange sie fehlen,
+Inzwischen 20 Fälle geschrieben, aber die Repository-Secrets fehlen. Solange sie fehlen,
 belegt **nichts** automatisch, dass Mandant A keine Daten von Mandant B sieht.
 
 ### Backup-Wiederherstellung nie geübt
@@ -87,6 +92,17 @@ niemand, bevor sie einmal durchgespielt wurde.
 
 ### Keine eigene 404-Seite
 Ein falscher Link zeigt die Next.js-Standardseite auf Englisch.
+
+### Leaked Password Protection ist aus
+In der Supabase-Konsole ist der Abgleich neuer Passwörter gegen
+HaveIBeenPwned ausgeschaltet. Ein Haken im Dashboard, kein Code — sollte
+gesetzt werden, bevor Kunden ihre Passwörter selbst wählen.
+
+### Keine strenge Skript-Richtlinie
+Seit 18.08.2026 setzt die Anwendung `frame-ancestors`, `base-uri`,
+`form-action`, `nosniff`, `Referrer-Policy` und HSTS. Eine echte `script-src`
+fehlt weiterhin: Next.js liefert Inline-Skripte aus, dafür bräuchte es Nonces
+durch die ganze Anwendung.
 
 ---
 
@@ -107,5 +123,6 @@ Migrationspfad zu machen.
 1. **Medienwähler mit Zuschnitt** — ohne ihn kann kein Kunde eine Bildseite pflegen
 2. **Sortierung per Drag & Drop** — betrifft drei von fünf Inhaltstypen
 3. **Vorschau** — der Moment, in dem der Kunde Vertrauen fasst
-4. **Rate-Limit und Isolationstest scharfstellen** — bevor echte Kundendaten drin sind
+4. **Isolationstest scharfstellen** — die drei Repository-Secrets hinterlegen; das
+   Rate-Limit steht seit 18.08.2026
 5. Versionsverlauf, Suche, Duplizieren — Komfort, sobald mehr Inhalt da ist

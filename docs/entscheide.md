@@ -638,3 +638,153 @@ Auswahl nach innen. Ein Regressionsfall in `tests/isolation.test.ts` trägt beid
 Varianten nebeneinander — die ungefilterte Abfrage *soll* dort zwei Zeilen
 liefern, denn genau das ist der Beweis, dass RLS hier nicht die gesuchte Grenze
 ist.
+
+---
+
+## 30 · Was ein Testdurchgang mit eigenen Konten zutage fördert
+
+Für den Durchgang habe ich drei eigene Konten angelegt — `qa-admin`,
+`qa-chef` (alle Rechte im Mandanten), `qa-aushilfe` (nur News, keine
+Benutzerverwaltung) — und einen eigenen Mandanten über die Oberfläche erstellt.
+Nicht gegen Attrappen, sondern gegen die echte Datenbank.
+
+Was dabei herauskam, ordnet sich in eine einzige Beobachtung: **Die Datenbank
+hielt überall stand. Die Oberfläche und die Fehlerbehandlung nicht.**
+
+### Ein Webhook durfte das Veröffentlichen umbringen
+
+`veroeffentliche()` trug im Kommentar: „Der Rebuild der Kundenseite darf das
+Veröffentlichen nicht aufhalten." Der Code tat das Gegenteil. `sendeWebhooks()`
+lief nach dem Veröffentlichen, ohne Fang — und wenn dort etwas schiefging, riss
+es die ganze Server-Action mit. Der Eintrag war live, der Kunde sah „Da ist
+etwas schiefgelaufen" und veröffentlichte ratlos ein zweites Mal.
+
+Aufgefallen, weil der Testserver keinen Service-Schlüssel hatte und
+`adminClient()` synchron wirft. Der Auslöser war die Testumgebung, der Fehler
+war es nicht: Jeder Netzwerkfehler beim Einreihen hätte dasselbe angerichtet.
+`sendeWebhooks()` wirft jetzt nie mehr — es protokolliert.
+
+### `adminClient()` wirft synchron, und niemand fing das
+
+Dieselbe Ursache an fünf weiteren Stellen: Zugang anlegen, Startpasswort
+zurücksetzen, Benutzer löschen, Adminrolle setzen, Merker nach dem
+Passwortwechsel löschen. Überall die allgemeine Fehlerseite statt eines Satzes.
+
+Der schlimmste Fall war der Passwortwechsel: Das Passwort war gesetzt, aber der
+Merker `muss_passwort_aendern` blieb stehen — der Benutzer landete in einer
+Endlosschleife auf `/passwort-neu`, mit Fehlerseite. Neu gibt es
+`adminClientOderNull()`; jeder Aufrufer, der einen verständlichen Satz
+zurückgeben kann, benutzt sie.
+
+### Die Oberfläche zeigte mehr, als sie durfte
+
+Die Aushilfe sah alle fünf Inhaltstypen, öffnete die Speisekarte und fand eine
+leere Liste mit „Leg den ersten Eintrag an" — was die Datenbank ihr zurecht
+verweigert hätte. Auf der Zugangsseite sah sie „Entfernen" und „Neues
+Startpasswort" neben dem Konto des Wirts. Beides ohne Wirkung: Row Level
+Security hielt, `can_manage_tenant()` hielt.
+
+Aber `entferneZugang()` gab `void` zurück. Wer klickte, für den passierte
+sichtbar **gar nichts**. Ein stiller Nicht-Effekt ist die schlechteste Antwort
+auf eine fehlende Berechtigung — er sieht aus wie ein kaputtes Programm.
+
+`ladeInhaltstypen()` beantwortet „was ist für den Mandanten freigeschaltet".
+Die Kundenoberfläche braucht die andere Frage: „was darf ich anfassen." Dafür
+gibt es jetzt `ladeBearbeitbareInhaltstypen()`. Dieselbe Verwechslung wie bei
+Entscheid 29 — nur eine Ebene höher.
+
+### Ein unsichtbares Feld schob die Seite quer
+
+`/einstellungen` liess sich auf dem Handy seitlich scrollen. Ursache: das für
+Passwortverwaltungen versteckte Benutzernamen-Feld. `.visuell-versteckt` setzt
+`width: 1px`, aber die allgemeine Eingabe-Regel trifft
+`input:not([type="checkbox"])…` und schlägt eine einzelne Klasse in der
+Spezifität um Längen. Das Feld war absolut positioniert, 390 px breit und
+unsichtbar — messbar nur daran, dass die Seite 422 px brauchte.
+
+Auch die Aufklapper im Editor waren 32 px hoch statt 48. Beides gehört zu
+„Die Wirtin ändert das Tagesmenü in unter 60 Sekunden vom Handy".
+
+### Und noch eine Lehre über das Prüfen
+
+Mein erster Testlauf meldete, „Mandant anlegen" werfe den Admin auf die
+Anmeldeseite. Ich habe die Middleware instrumentiert, Server-Actions verfolgt
+und eine Refresh-Token-Rotation vermutet. Tatsächlich traf
+`button[type="submit"]` den Abmelden-Knopf in der Kopfzeile, der im DOM zuerst
+steht — **derselbe Fehler wie in Entscheid 27, den ich dort bereits
+aufgeschrieben hatte.** Ein Testfehler, der eine halbe Stunde Fehlersuche in
+fremdem Code auslöste.
+
+---
+
+## 31 · Sicherheitsdurchgang: was die Datenbank hielt und was nicht
+
+Geprüft mit echten Konten gegen die Produktionsdatenbank, nicht auf dem Papier.
+
+### Gehalten hat
+
+| Prüfung | Ergebnis |
+| --- | --- |
+| Tabellen mit `tenant_id` ohne RLS | 0 |
+| Client im Adminbereich (`/admin`, `/admin/benutzer`) | umgeleitet |
+| Fremder Mandant über die Adresszeile | „gibt es nicht oder kein Zugriff" |
+| Aushilfe entfernt den Zugang des Wirts | von RLS abgewiesen |
+| Aushilfe veröffentlicht einen gesperrten Typ | `42501` |
+| `?at=` in der Lese-API ohne Vorschau-Token | `403` |
+| `/api/cron`, `/api/export`, `/api/media` ohne Anmeldung | `401` |
+| Offene Weiterleitung über `?weiter=https://…` | abgefangen |
+| `dangerouslySetInnerHTML` irgendwo | keins |
+| Geheimnisse im Repository | keine |
+| Storage: Schreibrechte für Angemeldete | keine, nur Service-Schlüssel |
+
+### Nicht gehalten hat
+
+**`restore_entry_version` prüfte nur die Mitgliedschaft.** Migration 0017 hatte
+`publish_entry` auf `can_edit_content_type` umgestellt, die Schwesterfunktion
+aber übersehen. Damit konnte die Aushilfe, die nur News pflegen darf, den
+Entwurf eines Speisekarten-Eintrags mit einer alten Version überschreiben.
+Nachgewiesen: Der Wert des Entwurfs stand danach tatsächlich auf
+„ÜBERSCHRIEBEN". Behoben in Migration 0019, danach abgewiesen und der Entwurf
+unverändert.
+
+Die Lehre: Wer eine Prüfung verschärft, muss **jeden** schreibenden Weg auf
+dieselben Zeilen mitnehmen. Auf `entries` schreiben `publish_entry` und
+`restore_entry_version` — beide gehören an dieselbe Prüfung.
+
+**Kein Schutz gegen Durchprobieren.** Zwölf falsche Passwörter hintereinander,
+zwölfmal dieselbe sofortige Antwort, keine Sperre. Migration 0020 bremst jetzt
+nach zehn Fehlversuchen je Adresse für eine Viertelstunde. Ausdrücklich nach
+E-Mail-Adresse und nicht nach IP: Alle Anfragen kommen vom Server, eine
+IP-Sperre träfe alle Kunden gleichzeitig.
+
+**`publish_entry` und `restore_entry_version` waren für `anon` ausführbar.**
+Migration 0006 hatte den Grant entzogen, spätere `create or replace`-Läufe
+brachten ihn zurück. Ausnutzbar war es nicht — beide prüfen intern, und für
+`anon` ist `auth.uid()` NULL. Ein offener Grant auf eine
+SECURITY-DEFINER-Funktion macht die innere Prüfung aber zur einzigen Grenze,
+und genau das soll sie nicht sein.
+
+**Keine Sicherheitskopfzeilen.** `admin.vinamo.ch` liess sich in einen fremden
+Rahmen setzen. Ein angemeldeter Kunde, eine harmlos aussehende Seite, ein Klick
+auf „Endgültig löschen", den er nie sehen wollte. Jetzt `X-Frame-Options: DENY`
+und `frame-ancestors 'none'`, dazu `Referrer-Policy`, `nosniff`,
+`Permissions-Policy` und HSTS. Bewusst ohne `script-src`: Eine strenge
+Skript-Richtlinie bräuchte Nonces durch die ganze Anwendung — das ist eine
+eigene Aufgabe, kein Nebenbei.
+
+**Geheimnisse wurden mit `===` verglichen.** Vorschau-Token und Cron-Geheimnis
+laufen jetzt über `timingSafeEqual`. Kleines Risiko, kleinerer Aufwand.
+
+### Offen und bewusst so
+
+Der Medien-Bucket ist **öffentlich lesbar** — die Bilder stehen auf
+Kundenwebsites, das ist der Zweck. Wer die Adresse kennt, sieht die Datei.
+Dorthin gehören deshalb keine vertraulichen Dokumente.
+
+`log_audit()` prüft die Mitgliedschaft, aber ein Mitglied kann beliebige
+Aktionstexte in das Protokoll **des eigenen** Mandanten schreiben. Der Absender
+lässt sich nicht fälschen (`auth.uid()`).
+
+In der Supabase-Konsole ist **„Leaked Password Protection" ausgeschaltet** —
+der Abgleich gegen HaveIBeenPwned. Das ist ein Haken im Dashboard, kein Code,
+und sollte gesetzt werden.

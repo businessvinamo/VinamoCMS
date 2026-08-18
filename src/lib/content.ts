@@ -85,6 +85,41 @@ export async function ladeInhaltstypen(tenantId: string): Promise<ContentType[]>
     })
 }
 
+/**
+ * Nur die Inhaltstypen, die DIESER Benutzer bearbeiten darf.
+ *
+ * ladeInhaltstypen() beantwortet „was ist für den Mandanten freigeschaltet".
+ * Die Oberfläche des Kunden braucht die andere Antwort: „was darf ich anfassen".
+ * Ohne diese Unterscheidung sah die Aushilfe, die nur News pflegen darf, alle
+ * fünf Typen, öffnete die Speisekarte und fand eine leere Liste mit der
+ * Aufforderung, den ersten Eintrag anzulegen -- was die Datenbank ihr zurecht
+ * verweigert. Die Grenze steht in der Datenbank; hier steht sie noch einmal
+ * dort, wo der Kunde sie sehen muss.
+ *
+ * allowed_content_types = NULL heisst „alle freigeschalteten" -- der Normalfall.
+ */
+export async function ladeBearbeitbareInhaltstypen(tenantId: string): Promise<ContentType[]> {
+  const [typen, supabase] = await Promise.all([ladeInhaltstypen(tenantId), createClient()])
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data: adminP } = await supabase.rpc('is_platform_admin')
+  if (adminP === true) return typen
+
+  const { data: mitglied } = await supabase
+    .from('tenant_members')
+    .select('allowed_content_types')
+    .eq('tenant_id', tenantId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!mitglied) return []
+  const erlaubt = mitglied.allowed_content_types as string[] | null
+  if (erlaubt === null) return typen
+  return typen.filter((t) => erlaubt.includes(t.id))
+}
+
 export type Eintrag = {
   id: string
   status: 'draft' | 'published' | 'archived'

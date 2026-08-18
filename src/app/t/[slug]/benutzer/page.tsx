@@ -18,9 +18,10 @@ export default async function BenutzerSeite({
   // tenant_member_accounts() prüft selbst, dass der Aufrufer zum Mandanten
   // gehört, und gibt nur dessen Mitglieder zurück. Vorher las diese Seite ALLE
   // Auth-Konten mit dem Service-Schlüssel und filterte danach im Code.
-  const { data: konten } = await supabase.rpc('tenant_member_accounts', {
-    p_tenant_id: tenant.id,
-  })
+  const [{ data: konten }, { data: darfVerwalten }] = await Promise.all([
+    supabase.rpc('tenant_member_accounts', { p_tenant_id: tenant.id }),
+    supabase.rpc('can_manage_tenant', { p_tenant_id: tenant.id }),
+  ])
 
   type Konto = { user_id: string; email: string | null }
   const liste = ((konten ?? []) as Konto[]).map((k) => ({
@@ -37,14 +38,16 @@ export default async function BenutzerSeite({
           <Link href={`/t/${slug}`} className="leise">← {tenant.name}</Link>
           <h1>Zugänge</h1>
           <p className="leise">
-            Wer sich für {tenant.name} anmelden und Inhalte pflegen darf. Alle
-            Zugänge sind gleichberechtigt.
+            Wer sich für {tenant.name} anmelden und Inhalte pflegen darf. Welche
+            Inhalte jemand bearbeiten darf und ob er selbst Zugänge verwalten
+            kann, legt Vinamo pro Person fest.
           </p>
         </div>
 
         <Zugaenge
           tenantSlug={slug}
           liste={liste}
+          darfVerwalten={darfVerwalten === true}
           anlegen={legeZugangAn}
           zuruecksetzen={setzeStartpasswortNeu}
           entfernen={entferneZugang}

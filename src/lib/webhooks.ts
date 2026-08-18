@@ -23,31 +23,48 @@ export type WebhookEreignis = 'entry.published' | 'entry.unpublished' | 'media.c
  * Das Veröffentlichen darf nicht daran hängen, ob Vercel gerade antwortet. Der
  * Eintrag ist bereits live; ob die Kundenseite in zehn Sekunden oder in zwei
  * Minuten neu gebaut ist, ändert nichts an der Korrektheit.
+ *
+ * Aus demselben Grund wirft diese Funktion NIE. Der Eintrag ist bereits
+ * veröffentlicht, wenn sie aufgerufen wird -- ein Fehler beim Einreihen darf die
+ * Server-Action nicht mitreissen, sonst sieht der Kunde eine Fehlerseite für
+ * etwas, das längst live ist, und veröffentlicht ratlos ein zweites Mal.
+ * Beobachtet: Ohne Service-Schlüssel wirft adminClient() synchron, und aus dem
+ * erfolgreichen Veröffentlichen wurde „Da ist etwas schiefgelaufen".
  */
 export async function sendeWebhooks(
   tenantId: string,
   ereignis: WebhookEreignis,
   nutzlast: Record<string, unknown>,
 ): Promise<void> {
-  const admin = adminClient()
+  try {
+    const admin = adminClient()
 
-  const { data: hooks } = await admin
-    .from('webhooks')
-    .select('id')
-    .eq('tenant_id', tenantId)
-    .eq('is_active', true)
-    .contains('events', [ereignis])
+    const { data: hooks, error } = await admin
+      .from('webhooks')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true)
+      .contains('events', [ereignis])
 
-  if (!hooks?.length) return
+    if (error) throw new Error(error.message)
+    if (!hooks?.length) return
 
-  await admin.from('webhook_deliveries').insert(
-    hooks.map((h) => ({
-      webhook_id: h.id,
-      tenant_id: tenantId,
-      event: ereignis,
-      payload: { ...nutzlast, event: ereignis, at: new Date().toISOString() },
-    })),
-  )
+    const { error: einreihen } = await admin.from('webhook_deliveries').insert(
+      hooks.map((h) => ({
+        webhook_id: h.id,
+        tenant_id: tenantId,
+        event: ereignis,
+        payload: { ...nutzlast, event: ereignis, at: new Date().toISOString() },
+      })),
+    )
+    if (einreihen) throw new Error(einreihen.message)
+  } catch (fehler) {
+    // Sichtbar im Serverprotokoll, folgenlos für den Kunden. Bleibt die Meldung
+    // stehen, wird die Kundenseite nicht mehr neu gebaut -- das gehört überwacht,
+    // ist aber kein Grund, das Veröffentlichen scheitern zu lassen.
+    console.error('[webhooks] Einreihen fehlgeschlagen',
+      ereignis, tenantId, fehler instanceof Error ? fehler.message : fehler)
+  }
 }
 
 /**

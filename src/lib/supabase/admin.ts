@@ -28,3 +28,23 @@ export function adminClient(): SupabaseClient {
   })
   return zwischenspeicher
 }
+
+
+/**
+ * Wie adminClient(), aber ohne zu werfen.
+ *
+ * adminClient() wirft SYNCHRON, wenn der Service-Schlüssel fehlt -- und weil das
+ * in einer Server-Action passiert, sieht der Kunde statt einer Meldung die
+ * allgemeine Fehlerseite. Für jeden Aufrufer, der einen verständlichen Satz
+ * zurückgeben kann, ist diese Variante die richtige: Sie unterscheidet
+ * „Serverkonfiguration unvollständig" von „hat nicht geklappt".
+ */
+export function adminClientOderNull(): SupabaseClient | null {
+  try {
+    return adminClient()
+  } catch (fehler) {
+    console.error('[admin] Service-Schlüssel nicht verfügbar',
+      fehler instanceof Error ? fehler.message : fehler)
+    return null
+  }
+}

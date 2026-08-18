@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
+import { geheimnisGleich } from '@/lib/geheimnis'
 import { adminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
@@ -34,8 +35,7 @@ export async function GET(
   // indem er ?at= in die Zukunft setzt.
   const atParam = request.nextUrl.searchParams.get('at')
   const token = request.nextUrl.searchParams.get('token')
-  const vorschauErlaubt =
-    Boolean(process.env.PREVIEW_TOKEN) && token === process.env.PREVIEW_TOKEN
+  const vorschauErlaubt = geheimnisGleich(process.env.PREVIEW_TOKEN, token)
 
   if (atParam && !vorschauErlaubt) {
     return NextResponse.json(

@@ -210,6 +210,52 @@ describe('Grenzen der Rolle client', () => {
     expect(data).toBe(false)
   })
 
+  it('eingeschränkter Benutzer kann keine fremde Version wiederherstellen', async () => {
+    // Regression: restore_entry_version prüfte nur is_tenant_member(), während
+    // publish_entry längst can_edit_content_type() verlangte. Damit liess sich
+    // der Entwurf eines gesperrten Inhaltstyps mit einer alten Version
+    // ueberschreiben -- veroeffentlichen ging nicht, die Arbeit war trotzdem weg.
+    const { data: typen } = await admin
+      .from('content_types').select('id, key').in('key', ['news', 'team'])
+    const erlaubt = typen!.find((t) => t.key === 'news')!
+    const gesperrt = typen!.find((t) => t.key === 'team')!
+
+    await admin.from('tenant_content_types').insert([
+      { tenant_id: tenantA, content_type_id: erlaubt.id, position: 0 },
+      { tenant_id: tenantA, content_type_id: gesperrt.id, position: 1 },
+    ])
+    await admin.from('tenant_members')
+      .update({ allowed_content_types: [erlaubt.id] })
+      .eq('tenant_id', tenantA).eq('user_id', userA)
+
+    const { data: eintrag } = await admin.from('entries').insert({
+      tenant_id: tenantA, content_type_id: gesperrt.id,
+      status: 'draft', position: 0, field_values: { name: 'Original' },
+    }).select('id').single()
+
+    const { data: version } = await admin.from('entry_versions').insert({
+      entry_id: eintrag!.id, tenant_id: tenantA, version_no: 1,
+      snapshot: {
+        entry_id: eintrag!.id, field_values: { name: 'UEBERSCHRIEBEN' },
+        translations: {}, position: 0, slot: null, priority: 0,
+      },
+    }).select('id').single()
+
+    const { error } = await alsA.rpc('restore_entry_version', { p_version_id: version!.id })
+    expect(error).not.toBeNull()
+    expect(error!.code).toBe('42501')
+
+    // Und der Entwurf steht unveraendert da -- die Prüfung greift, bevor
+    // geschrieben wird, nicht danach.
+    const { data: danach } = await admin
+      .from('entries').select('field_values').eq('id', eintrag!.id).single()
+    expect((danach!.field_values as { name: string }).name).toBe('Original')
+
+    await admin.from('tenant_members')
+      .update({ allowed_content_types: null })
+      .eq('tenant_id', tenantA).eq('user_id', userA)
+  })
+
   it('mehrere Mitglieder ergeben trotzdem genau eine Mitgliedschaft', async () => {
     // Regression: listMemberships() verliess sich auf RLS statt auf einen
     // user_id-Filter. Weil Mitglieder desselben Mandanten einander sehen

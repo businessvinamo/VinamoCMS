@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Kopfzeile } from '@/components/Kopfzeile'
 import { createClient } from '@/lib/supabase/server'
 import { isPlatformAdmin, requireTenant, requireUser } from '@/lib/tenant'
-import { ladeInhaltstypen } from '@/lib/content'
+import { ladeBearbeitbareInhaltstypen } from '@/lib/content'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +32,7 @@ export default async function MandantSeite({
   const [{ data: mitglieder }, { data: schalter }, typen] = await Promise.all([
     supabase.from('tenant_members').select('user_id, role, created_at').eq('tenant_id', tenant.id),
     supabase.from('tenant_feature_flags').select('flag_key, enabled').eq('tenant_id', tenant.id),
-    ladeInhaltstypen(tenant.id),
+    ladeBearbeitbareInhaltstypen(tenant.id),
   ])
 
   const aktiv = (schalter ?? []).filter((s) => s.enabled).map((s) => s.flag_key)

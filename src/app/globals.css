@@ -223,7 +223,16 @@ button:disabled, .knopf-zweit:disabled, .chip:disabled {
 }
 .leiste button { flex: none; }
 
-details.karte > summary { cursor: pointer; list-style: none; min-height: 32px; }
+/*
+  Aufklapper sind Bedienelemente und brauchen dieselbe Trefferfläche wie ein
+  Knopf. min-height: 32px war unter der Daumenbreite -- gemessen im Editor auf
+  390px, wo „Zeitsteuerung" und „Weitere Aktionen" 32px hoch waren.
+*/
+details.karte > summary {
+  cursor: pointer; list-style: none;
+  min-height: var(--touch);
+  display: flex; align-items: center; gap: 6px;
+}
 details.karte > summary::-webkit-details-marker { display: none; }
 details.karte > summary::after { content: " ▾"; color: var(--text-leise); }
 details.karte[open] > summary::after { content: " ▴"; }
@@ -237,10 +246,21 @@ details.karte[open] > summary::after { content: " ▴"; }
 .zustand-abgelaufen,
 .zustand-noch_nicht_gueltig { background: #FAF0DF; color: #8A5406; }
 
+/*
+  Nur für Screenreader.
+
+  !important ist hier kein Faulheitszeichen, sondern nötig: Die allgemeine
+  Eingabe-Regel weiter oben trifft input:not([type="checkbox"])… und schlägt eine
+  einzelne Klasse in der Spezifität. Ohne diese Absicherung bekam das versteckte
+  Feld für Passwortverwaltungen width:100%, wurde absolut positioniert 390px
+  breit und schob auf dem Handy die ganze Seite quer -- unsichtbar, aber messbar.
+*/
 .visuell-versteckt {
-  position: absolute; width: 1px; height: 1px;
-  padding: 0; margin: -1px; overflow: hidden;
-  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  position: absolute !important;
+  width: 1px !important; height: 1px !important;
+  padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+  clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap; border: 0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

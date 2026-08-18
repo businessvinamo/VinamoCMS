@@ -2,13 +2,17 @@
 
 import { revalidatePath } from 'next/cache'
 import { erzeugeStartpasswort } from '@/lib/benutzer'
-import { adminClient } from '@/lib/supabase/admin'
+import { adminClientOderNull } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { isPlatformAdmin } from '@/lib/tenant'
 
 export type AdminBenutzerErgebnis =
   | { ok: true; meldung: string; startpasswort?: string; email?: string }
   | { ok: false; meldung: string }
+
+/** Fehlender Service-Schlüssel ist ein Betriebsproblem, kein Bedienfehler. */
+const KONFIGURATION_FEHLT =
+  'Benutzer lassen sich gerade nicht verwalten — dem Server fehlt eine Einstellung. Bitte die Serverkonfiguration prüfen.'
 
 /** Plattformrolle vergeben oder entziehen. */
 export async function setzeAdminrolle(
@@ -27,7 +31,8 @@ export async function setzeAdminrolle(
     return { ok: false, meldung: 'Du kannst dir die Adminrechte nicht selbst entziehen.' }
   }
 
-  const admin = adminClient()
+  const admin = adminClientOderNull()
+  if (!admin) return { ok: false, meldung: KONFIGURATION_FEHLT }
 
   if (istAdmin) {
     const { error } = await admin.from('platform_admins')
@@ -60,7 +65,10 @@ export async function setzePasswortNeu(userId: string): Promise<AdminBenutzerErg
   }
 
   const startpasswort = erzeugeStartpasswort()
-  const { data, error } = await adminClient().auth.admin.updateUserById(userId, {
+  const admin = adminClientOderNull()
+  if (!admin) return { ok: false, meldung: KONFIGURATION_FEHLT }
+
+  const { data, error } = await admin.auth.admin.updateUserById(userId, {
     password: startpasswort,
     app_metadata: { muss_passwort_aendern: true },
   })
@@ -87,7 +95,10 @@ export async function loescheBenutzer(userId: string): Promise<AdminBenutzerErge
     return { ok: false, meldung: 'Du kannst dein eigenes Konto nicht löschen.' }
   }
 
-  const { error } = await adminClient().auth.admin.deleteUser(userId)
+  const admin = adminClientOderNull()
+  if (!admin) return { ok: false, meldung: KONFIGURATION_FEHLT }
+
+  const { error } = await admin.auth.admin.deleteUser(userId)
   if (error) {
     console.error('[admin] Benutzer löschen', error.message)
     return { ok: false, meldung: 'Das Konto konnte nicht gelöscht werden.' }

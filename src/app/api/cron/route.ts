@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { geheimnisGleich } from '@/lib/geheimnis'
 import { adminClient } from '@/lib/supabase/admin'
 import { sendeWebhooks, stelleFaelligeZu } from '@/lib/webhooks'
 
@@ -24,9 +25,9 @@ export const runtime = 'nodejs'
  */
 export async function GET(request: NextRequest) {
   const erwartet = process.env.CRON_SECRET
-  const mitgeliefert = request.headers.get('authorization')
+  const mitgeliefert = request.headers.get('authorization')?.replace(/^Bearer /, '') ?? null
 
-  if (!erwartet || mitgeliefert !== `Bearer ${erwartet}`) {
+  if (!geheimnisGleich(erwartet, mitgeliefert)) {
     return NextResponse.json({ error: 'Nicht berechtigt.' }, { status: 401 })
   }
 
