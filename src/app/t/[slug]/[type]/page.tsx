@@ -4,6 +4,8 @@ import { Kopfzeile } from '@/components/Kopfzeile'
 import { anzeigezustand, ladeEintraege, ladeBearbeitbareInhaltstypen, ZUSTAND_TEXT } from '@/lib/content'
 import { requireTenant, requireUser } from '@/lib/tenant'
 import { NeuKnopf } from '@/components/NeuKnopf'
+import { Reihenfolge } from '@/components/Reihenfolge'
+import { sortiere } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,10 +54,10 @@ export default async function ListenSeite({
           </div>
         ) : (
           <ul className="liste">
-            {eintraege.map((e) => {
+            {eintraege.map((e, i) => {
               const zustand = anzeigezustand(e)
               return (
-                <li key={e.id}>
+                <li key={e.id} className={typ.sortable ? 'sortierzeile' : undefined}>
                   <Link href={`/t/${slug}/${type}/${e.id}`} className="karte karte-klick">
                     <span className="stapel-eng">
                       <strong>{titelVon(e)}</strong>
@@ -63,6 +65,12 @@ export default async function ListenSeite({
                     </span>
                     <span className={`marke-rolle zustand-${zustand}`}>{ZUSTAND_TEXT[zustand]}</span>
                   </Link>
+                  {typ.sortable && (
+                    <Reihenfolge
+                      tenantSlug={slug} typeKey={type} index={i}
+                      reihenfolge={eintraege.map((x) => x.id)} sortiere={sortiere}
+                    />
+                  )}
                 </li>
               )
             })}

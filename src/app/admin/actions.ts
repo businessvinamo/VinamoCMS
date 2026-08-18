@@ -99,3 +99,17 @@ export async function setzeMandantAktiv(tenantId: string, aktiv: boolean): Promi
   await supabase.from('tenants').update({ is_active: aktiv }).eq('id', tenantId)
   revalidatePath('/admin')
 }
+
+/**
+ * Währung des Mandanten umstellen.
+ *
+ * Sie hing vorher als config.currency an jedem einzelnen Preisfeld -- also
+ * global für alle Kunden gleich. Ein Betrieb in Konstanz hätte seine Preise in
+ * Franken ausgezeichnet.
+ */
+export async function setzeWaehrung(tenantId: string, waehrung: string): Promise<void> {
+  if (waehrung !== 'CHF' && waehrung !== 'EUR') return
+  const supabase = await createClient()
+  await supabase.from('tenants').update({ currency: waehrung }).eq('id', tenantId)
+  revalidatePath('/admin')
+}

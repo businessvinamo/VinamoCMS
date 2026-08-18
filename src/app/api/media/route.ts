@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import sharp, { type Sharp } from 'sharp'
+import { medienAdressen } from '@/lib/medien'
 import { adminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
@@ -11,7 +12,16 @@ export const maxDuration = 30
 /** Breiten für das srcset. Deckt Handy bis Netzhaut-Desktop ab. */
 const BREITEN = [400, 800, 1200, 1600]
 const MAX_BYTES = 15 * 1024 * 1024
-const ERLAUBT = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic'])
+const BILDER = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic'])
+/**
+ * Dokumente werden NICHT umgewandelt, nur abgelegt.
+ *
+ * Bewusst nur PDF: Es ist überall lesbar, ohne dass der Gast Office braucht.
+ * Ein hochgeladenes .docx wäre für die halbe Besucherschaft ein Download, den
+ * sie nicht öffnen kann -- und für uns eine Datei, deren Inhalt wir nicht
+ * kennen.
+ */
+const DOKUMENTE = new Set(['application/pdf'])
 
 /**
  * Medien-Upload.
@@ -42,9 +52,11 @@ export async function POST(request: NextRequest) {
       { status: 413 },
     )
   }
-  if (!ERLAUBT.has(datei.type)) {
+  const istBild = BILDER.has(datei.type)
+  const istDokument = DOKUMENTE.has(datei.type)
+  if (!istBild && !istDokument) {
     return NextResponse.json(
-      { error: 'Nur Bilder im Format JPEG, PNG, WebP, AVIF oder HEIC.' },
+      { error: 'Erlaubt sind Bilder (JPEG, PNG, WebP, AVIF, HEIC) und PDF-Dateien.' },
       { status: 415 },
     )
   }
@@ -62,7 +74,50 @@ export async function POST(request: NextRequest) {
   // Dasselbe Bild soll ohne Duplikat mehrfach verwendbar sein.
   const { data: vorhanden } = await admin
     .from('media').select('*').eq('tenant_id', tenantId).eq('checksum', checksum).maybeSingle()
-  if (vorhanden) return NextResponse.json({ media: vorhanden, wiederverwendet: true })
+  if (vorhanden) {
+    return NextResponse.json({
+      media: { ...vorhanden, ...medienAdressen(vorhanden) }, wiederverwendet: true,
+    })
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dokumente: unverändert ablegen
+  //
+  // Kein sharp, keine Varianten, kein Zuschnitt. Ein PDF hat keine Breite, in
+  // der es sich ausliefern liesse -- der Gast lädt es, wie es ist.
+  // ---------------------------------------------------------------------------
+  if (istDokument) {
+    const pfad = `${tenantId}/${checksum.slice(0, 16)}.pdf`
+    const { error: hochladen } = await admin.storage
+      .from('media').upload(pfad, roh, { contentType: 'application/pdf', upsert: true })
+    if (hochladen) {
+      console.error('[media] PDF-Upload fehlgeschlagen', hochladen.message)
+      return NextResponse.json({ error: 'Die Datei konnte nicht gespeichert werden.' }, { status: 502 })
+    }
+
+    const { data: dokument, error: dFehler } = await admin
+      .from('media')
+      .insert({
+        tenant_id: tenantId,
+        path: pfad,
+        original_name: datei.name.slice(0, 200),
+        mime: 'application/pdf',
+        bytes: roh.length,
+        checksum,
+        variants: [{ w: 0, path: pfad, bytes: roh.length }],
+        created_by: user.id,
+      })
+      .select('*')
+      .single()
+
+    if (dFehler) {
+      console.error('[media] Datensatz fehlgeschlagen', dFehler.message)
+      return NextResponse.json({ error: 'Die Datei konnte nicht gespeichert werden.' }, { status: 502 })
+    }
+    return NextResponse.json({
+      media: { ...dokument, ...medienAdressen(dokument) }, wiederverwendet: false,
+    })
+  }
 
   let bild: Sharp
   let breite: number
@@ -131,5 +186,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Das Bild konnte nicht gespeichert werden.' }, { status: 502 })
   }
 
-  return NextResponse.json({ media: medium, wiederverwendet: false })
+  return NextResponse.json({
+    media: { ...medium, ...medienAdressen(medium) }, wiederverwendet: false,
+  })
 }

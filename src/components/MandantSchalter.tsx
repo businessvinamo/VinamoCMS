@@ -7,15 +7,18 @@ type Typ = { id: string; name: string; beschreibung: string; an: boolean; zeitge
 type Funktion = { key: string; beschreibung: string; an: boolean; notbremse: boolean }
 
 export function MandantSchalter({
-  tenantId, istAktiv, typen, funktionen, schalteTyp, schalteFunktion, setzeAktiv,
+  tenantId, istAktiv, waehrung, typen, funktionen,
+  schalteTyp, schalteFunktion, setzeAktiv, setzeWaehrung,
 }: {
   tenantId: string
   istAktiv: boolean
+  waehrung: string
   typen: Typ[]
   funktionen: Funktion[]
   schalteTyp: (tenantId: string, contentTypeId: string, an: boolean) => Promise<void>
   schalteFunktion: (tenantId: string, flagKey: string, an: boolean) => Promise<void>
   setzeAktiv: (tenantId: string, aktiv: boolean) => Promise<void>
+  setzeWaehrung: (tenantId: string, waehrung: string) => Promise<void>
 }) {
   const router = useRouter()
   const [laeuft, starte] = useTransition()
@@ -23,6 +26,23 @@ export function MandantSchalter({
 
   return (
     <>
+      <div className="karte">
+        <h2>Währung</h2>
+        <p className="leise">
+          Gilt für alle Preisfelder dieses Kunden — Speisekarte wie Leistungen.
+        </p>
+        <div className="chips">
+          {['CHF', 'EUR'].map((w) => (
+            <button key={w} type="button" disabled={laeuft}
+                    aria-pressed={waehrung === w}
+                    className={waehrung === w ? 'chip chip-an' : 'chip'}
+                    onClick={() => tun(() => setzeWaehrung(tenantId, w))}>
+              {w}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="karte">
         <h2>Inhaltstypen</h2>
         <p className="leise">

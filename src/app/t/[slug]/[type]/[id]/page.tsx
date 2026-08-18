@@ -38,6 +38,8 @@ export default async function EditorSeite({
           typ={typ}
           eintrag={eintrag}
           tenantSlug={slug}
+          tenantId={tenant.id}
+          waehrung={tenant.currency}
           sprachen={tenant.locales}
           hauptsprache={tenant.default_locale}
           istLive={zustand === 'live'}

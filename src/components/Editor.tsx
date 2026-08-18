@@ -33,12 +33,15 @@ export type Entwurf = {
 }
 
 export function Editor({
-  typ, eintrag, tenantSlug, sprachen, hauptsprache, istLive,
+  typ, eintrag, tenantSlug, tenantId, waehrung, sprachen, hauptsprache, istLive,
   speichern, veroeffentlichen,
 }: {
   typ: ContentType
   eintrag: Eintrag
   tenantSlug: string
+  /** Für den Upload: Medien gehören einem Mandanten. */
+  tenantId: string
+  waehrung: string
   sprachen: string[]
   hauptsprache: string
   istLive: boolean
@@ -63,6 +66,11 @@ export function Editor({
   const [fehler, setFehler] = useState<Fehler[]>([])
   const [meldung, setMeldung] = useState<string | null>(null)
   const [laeuft, starte] = useTransition()
+
+  const umgebung = useMemo(
+    () => ({ tenantId, waehrung }),
+    [tenantId, waehrung],
+  )
 
   const entwurf: Entwurf = useMemo(() => ({
     entryId: eintrag.id, tenantSlug, typeKey: typ.key,
@@ -187,7 +195,7 @@ export function Editor({
         // pflegt der Kunde denselben Preis viermal.
         if (!feld.translatable && feld.type !== 'repeater') {
           return istHaupt
-            ? <Feld key={feld.id} feld={feld} wert={basis[feld.key]}
+            ? <Feld key={feld.id} feld={feld} wert={basis[feld.key]} umgebung={umgebung}
                     onChange={(w) => setzeBasis(feld.key, w)} />
             : null
         }
@@ -195,38 +203,51 @@ export function Editor({
         if (feld.type === 'repeater') {
           const zeilen = Array.isArray(basis[feld.key]) ? (basis[feld.key] as RepeaterRow[]) : []
           const uebersetzbare = feld.children.filter((k) => k.translatable)
+          const uebersetzt = (werte[feld.key] ?? {}) as Record<string, FieldValues>
+          const hauptZeile = (hauptWerte[feld.key] ?? {}) as Record<string, FieldValues>
 
+          // In der Hauptsprache steht ALLES in einer Zeilenkarte -- Gericht,
+          // Beschreibung, Preis, Allergene. In einer Übersetzung nur die Texte,
+          // dafür mit dem Original als Vorlage daneben.
           return (
             <section key={feld.id} className="karte">
               <h2>{feld.label}</h2>
-              {istHaupt ? (
-                <Feld feld={feld} wert={basis[feld.key]} onChange={(w) => setzeBasis(feld.key, w)} />
-              ) : (
-                <p className="leise">
-                  Zeilen und Preise werden auf {SPRACHNAMEN[hauptsprache]} gepflegt.
-                  Hier übersetzt du nur die Texte.
-                </p>
-              )}
+              {feld.help && <p className="leise">{feld.help}</p>}
 
-              {uebersetzbare.length > 0 && zeilen.length > 0 && (
+              {istHaupt ? (
+                <Feld
+                  feld={feld} wert={basis[feld.key]}
+                  onChange={(w) => setzeBasis(feld.key, w)}
+                  umgebung={{
+                    ...umgebung,
+                    zeilenUebersetzung: () => ({
+                      felder: uebersetzbare,
+                      wert: (zeilenId, key) => uebersetzt[zeilenId]?.[key] ?? '',
+                      setze: (zeilenId, key, w) =>
+                        setzeZeilenUebersetzung(feld.key, zeilenId, key, w),
+                    }),
+                  }}
+                />
+              ) : uebersetzbare.length === 0 || zeilen.length === 0 ? (
+                <p className="leise">
+                  Hier gibt es nichts zu übersetzen. Zeilen und Preise werden auf{' '}
+                  {SPRACHNAMEN[hauptsprache]} gepflegt.
+                </p>
+              ) : (
                 <div className="stapel-eng">
-                  {zeilen.map((zeile, i) => {
-                    const uebersetzt = (werte[feld.key] ?? {}) as Record<string, FieldValues>
-                    const hauptZeile = (hauptWerte[feld.key] ?? {}) as Record<string, FieldValues>
-                    return (
-                      <div key={zeile._id} className="zeile-karte">
-                        <span className="leise mono">Zeile {i + 1}</span>
-                        {uebersetzbare.map((kind) => (
-                          <Feld
-                            key={kind.id} feld={kind}
-                            wert={uebersetzt[zeile._id]?.[kind.key] ?? ''}
-                            vorlage={istHaupt ? undefined : hauptZeile[zeile._id]?.[kind.key]}
-                            onChange={(w) => setzeZeilenUebersetzung(feld.key, zeile._id, kind.key, w)}
-                          />
-                        ))}
-                      </div>
-                    )
-                  })}
+                  {zeilen.map((zeile, i) => (
+                    <div key={zeile._id} className="zeile-karte">
+                      <span className="leise mono">Zeile {i + 1}</span>
+                      {uebersetzbare.map((kind) => (
+                        <Feld
+                          key={kind.id} feld={kind} umgebung={umgebung}
+                          wert={uebersetzt[zeile._id]?.[kind.key] ?? ''}
+                          vorlage={hauptZeile[zeile._id]?.[kind.key]}
+                          onChange={(w) => setzeZeilenUebersetzung(feld.key, zeile._id, kind.key, w)}
+                        />
+                      ))}
+                    </div>
+                  ))}
                 </div>
               )}
             </section>
@@ -235,7 +256,7 @@ export function Editor({
 
         return (
           <Feld
-            key={feld.id} feld={feld} wert={werte[feld.key] ?? ''}
+            key={feld.id} feld={feld} wert={werte[feld.key] ?? ''} umgebung={umgebung}
             vorlage={istHaupt ? undefined : hauptWerte[feld.key]}
             onChange={(w) => setzeUebersetzung(feld.key, w)}
           />

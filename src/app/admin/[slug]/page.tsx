@@ -4,7 +4,7 @@ import { Kopfzeile } from '@/components/Kopfzeile'
 import { MandantSchalter } from '@/components/MandantSchalter'
 import { createClient } from '@/lib/supabase/server'
 import { isPlatformAdmin, requireUser } from '@/lib/tenant'
-import { schalteFunktion, schalteInhaltstyp, setzeMandantAktiv } from '../actions'
+import { schalteFunktion, schalteInhaltstyp, setzeMandantAktiv, setzeWaehrung } from '../actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,6 +53,7 @@ export default async function MandantVerwalten({
         <MandantSchalter
           tenantId={mandant.id}
           istAktiv={mandant.is_active}
+          waehrung={mandant.currency}
           typen={(alleTypen ?? []).map((t) => ({
             id: t.id, name: t.name_plural, beschreibung: t.description,
             an: aktiv.has(t.id),
@@ -66,6 +67,7 @@ export default async function MandantVerwalten({
           schalteTyp={schalteInhaltstyp}
           schalteFunktion={schalteFunktion}
           setzeAktiv={setzeMandantAktiv}
+          setzeWaehrung={setzeWaehrung}
         />
       </div>
     </main>

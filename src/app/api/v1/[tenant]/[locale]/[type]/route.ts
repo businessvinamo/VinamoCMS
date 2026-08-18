@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { geheimnisGleich } from '@/lib/geheimnis'
+import { medienAufloesen } from '@/lib/medien'
 import { adminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
@@ -77,6 +78,12 @@ export async function GET(
   if (data?.error) {
     return NextResponse.json({ error: data.error }, { status: 404 })
   }
+
+  // Bild- und Dateifelder tragen eine Kennung. Die Kundenwebsite kann damit
+  // nichts anfangen -- sie braucht eine Adresse. Vorher stand in der Anleitung,
+  // wie man sie zusammensetzt; jeder Website-Bauer hätte es selbst gebaut, und
+  // der erste Tippfehler wäre auf einer Kundenwebsite aufgefallen.
+  await medienAufloesen(admin, data)
 
   const koerper = JSON.stringify(data)
   const etag = `W/"${createHash('sha1').update(koerper).digest('base64url')}"`

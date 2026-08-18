@@ -850,3 +850,94 @@ ganz unten, nach viermal Scrollen, das Einzige, wofür der Kunde gekommen ist.
 **Der gemeinsame Nenner:** Die Seite war aus der Sicht dessen gebaut, der das
 System kennt. Für die Wirtin ist eine Mandanten-Kennung kein Ordnungsmerkmal,
 sondern eine Zeichenfolge, die sie beunruhigt.
+
+---
+
+## 33 · Ein Durchgang durch alle Inhaltstypen
+
+Kevin hat sich durch jeden Inhaltstyp geklickt. Was dabei herauskam, ist nicht
+eine Liste von Wünschen, sondern dreimal derselbe fehlende Baustein und ein paar
+Modellierungsfehler.
+
+### Der fehlende Baustein: ein Upload-Feld
+
+Bei News, Team und Leistungen stand im Bildfeld ein Textfeld mit dem Platzhalter
+„Kennung". Der Kunde hätte dort eine UUID eintippen müssen, die er nirgends
+sehen konnte — ein Bildfeld, in das sich kein Bild einsetzen liess. Die
+Upload-Route, die Verkleinerung in vier Breiten, WebP, EXIF-Entfernung: alles
+seit Phase 4 gebaut, angeschlossen an nichts.
+
+`Dateifeld` schliesst das an — und trägt gleich die PDF-Wochenkarte mit.
+
+Bewusst **keine Mediathek** mit Ordnern, Suche und Mehrfachauswahl. Ein
+KMU-Kunde lädt ein Foto pro Teammitglied und eine Karte pro Woche hoch; eine
+Bibliothek wäre eine zweite Anwendung, die er nie füllt. Wiederverwendung regelt
+die Prüfsumme im Hintergrund.
+
+### Die Speisekarte war in zwei Hälften zerschnitten
+
+Fünf Karten mit Preisen und Allergenen, darunter fünf Karten mit Gerichtsnamen.
+Der Preis von „Salade verte" stand zwei Bildschirme entfernt von „Salade verte".
+
+Der Grund war technisch: Nicht übersetzbare Werte liegen an der Zeile,
+übersetzbare pro Sprache. Zwei Speicherorte, also zwei Blöcke. **Wie etwas
+gespeichert wird, ist kein Grund, es getrennt anzuzeigen.** In der Hauptsprache
+steht jetzt alles in einer Zeilenkarte, in der Reihenfolge der Felddefinition.
+In einer Übersetzung bleibt die Trennung — dort sind Preise zurecht unsichtbar.
+
+### Öffnungszeiten waren Freitext
+
+„Von" und „Bis" waren Textfelder. Eintragbar war „09", „9h", „morgens" und „X" —
+alles davon unverändert auf der Kundenwebsite. Neuer Feldtyp `time`, geprüft
+sowohl im Eingabefeld als auch in der Server-Action. Bestehende Werte hat die
+Migration gedeutet, soweit sie eindeutig waren; „X" wurde geleert statt
+konserviert.
+
+**Ferien und besondere Tage** gab es technisch schon: ein zweiter Eintrag im
+selben Platz mit Rangzahl und Gültigkeitszeitraum. Für die Wirtin war das
+unauffindbar. Jetzt ein eigener Inhaltstyp mit Von/Bis als **gewöhnlichen
+Datumsfeldern** — nicht als Zeitsteuerung. Die blendet einen Eintrag ein und
+aus, und genau das ist hier falsch: „Wir sind ab dem 20.7. geschlossen" muss
+vorher auf der Website stehen, nicht erst am 20.7. erscheinen.
+
+### Währung gehörte zum Feld statt zum Betrieb
+
+`config.currency = 'CHF'` stand an jedem Preisfeld — also global für alle
+Kunden. Ein Betrieb in Konstanz hätte seine Preise in Franken ausgezeichnet.
+Jetzt eine Spalte an `tenants`, umschaltbar im Admin.
+
+### Allergene: Liste als Vorschlag, nicht als Zaun
+
+Die vierzehn Positionen sind die gesetzliche Liste (CH: Allergenverordnung, EU:
+LMIV Anhang II). Sie bleiben deshalb **vollständig** — eine Kürzung auf „die
+häufigsten vier" wäre kein Aufräumen, sondern eine Lücke in der Deklaration.
+Was gefehlt hat, ist Platz für alles, was auf einer Karte steht und in keiner
+Verordnung: „scharf", „vegan", „hausgemacht". Dafür `creatable`. Die Reihenfolge
+ist neu nach Häufigkeit statt nach Verordnungsnummer.
+
+### Zwei Produktfragen, zwei Antworten
+
+**Autorenfeld bei News: nein.** Bei einem KMU schreibt der Betrieb, nicht eine
+Person. Das Feld bliebe bei neun von zehn Kunden leer und macht jede Maske
+länger.
+
+**Hervorheben bei News: ja.** Ein Häkchen beantwortet eine Frage, die jede
+Kundenwebsite hat — welche Neuigkeit steht auf der Startseite? Ohne das kann sie
+nur „die neueste" zeigen, und die Ankündigung des Sonntagsbrunchs verschwindet,
+sobald jemand eine Kleinigkeit nachschiebt.
+
+**Team-Gliederung: Bereich ja, Nachnamen-Sortierung nein.** „Bereich" ist ein
+freies, übersetzbares Textfeld — jeder Betrieb benennt seine Gruppen selbst.
+Alphabetisch zu sortieren ist die Konvention grosser Organisationen; auf einer
+KMU-Teamseite steht der Chef vorn und die Lernende hinten. Innerhalb der Gruppe
+bleibt die selbst gewählte Reihenfolge — dafür gibt es jetzt Pfeile in der
+Liste, die `sortiere()` endlich anschliessen.
+
+### Und die Lese-API liefert jetzt Adressen
+
+Bild- und Dateifelder trugen eine Kennung. Die Kundenwebsite kann damit nichts
+anfangen. Wie man die Adresse zusammensetzt, stand nur in der Anleitung — jeder
+Website-Bauer hätte es selbst gebaut, und der erste Tippfehler wäre auf einer
+Kundenwebsite aufgefallen. Jetzt steht im Feld ein Objekt mit `url`, `srcset`,
+`alt`, Breite und Höhe, in einem einzigen zusätzlichen Datenbankzugriff für die
+ganze Antwort.

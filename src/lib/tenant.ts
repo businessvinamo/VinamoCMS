@@ -13,6 +13,8 @@ export type Tenant = {
   timezone: string
   branding: Record<string, unknown>
   is_active: boolean
+  /** Währung aller Preisfelder. Gehört zum Betrieb, nicht zum Feld. */
+  currency: string
 }
 
 export type Membership = {
@@ -62,7 +64,7 @@ export async function listMemberships(): Promise<Membership[]> {
 
   const { data, error } = await supabase
     .from('tenant_members')
-    .select('role, tenant:tenants(id, slug, name, locales, default_locale, timezone, branding, is_active)')
+    .select('role, tenant:tenants(id, slug, name, locales, default_locale, timezone, branding, is_active, currency)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: true })
 
@@ -85,7 +87,7 @@ export async function requireTenant(slug: string): Promise<{ tenant: Tenant; rol
 
   const { data: tenant, error } = await supabase
     .from('tenants')
-    .select('id, slug, name, locales, default_locale, timezone, branding, is_active')
+    .select('id, slug, name, locales, default_locale, timezone, branding, is_active, currency')
     .eq('slug', slug)
     .maybeSingle()
 

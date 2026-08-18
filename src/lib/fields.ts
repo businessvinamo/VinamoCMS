@@ -10,10 +10,13 @@
 
 export type FieldType =
   | 'text' | 'textarea' | 'richtext' | 'number' | 'price' | 'date' | 'datetime'
-  | 'boolean' | 'select' | 'multiselect' | 'media' | 'repeater' | 'reference'
+  | 'time' | 'boolean' | 'select' | 'multiselect' | 'media' | 'file'
+  | 'repeater' | 'reference'
 
 export type FieldConfig = {
   options?: string[]
+  /** Auswahlliste ist Vorschlag, nicht Zaun: eigene Werte sind erlaubt. */
+  creatable?: boolean
   currency?: string
   min?: number
   max?: number
@@ -62,6 +65,9 @@ export function leererWert(field: Field): unknown {
     case 'boolean':     return false
     case 'multiselect': return []
     case 'repeater':    return []
+    case 'time':        return null
+    case 'media':
+    case 'file':        return null
     case 'number':
     case 'price':       return null
     default:            return ''
@@ -145,6 +151,15 @@ function pruefeEinzelwert(feld: Field, wert: unknown, pfad: string): Fehler[] {
       }
       break
 
+    // Die Prüfung sitzt hier und nicht nur im Eingabefeld: <input type="time">
+    // ist bequem, aber die Server-Action nimmt auch entgegen, was ohne Browser
+    // geschickt wird. Vorher war „Von" ein Textfeld, in dem „X" stand.
+    case 'time':
+      if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(String(wert))) {
+        fehler.push({ pfad, meldung: `${feld.label} ist keine gültige Uhrzeit (z.B. 09:00).` })
+      }
+      break
+
     case 'boolean':
       if (typeof wert !== 'boolean') {
         fehler.push({ pfad, meldung: `${feld.label} muss ja oder nein sein.` })
@@ -162,6 +177,22 @@ function pruefeEinzelwert(feld: Field, wert: unknown, pfad: string): Fehler[] {
         fehler.push({ pfad, meldung: `${feld.label} muss eine Liste sein.` })
         break
       }
+      // creatable heisst „eigene Werte erlaubt", nicht „alles erlaubt": Ohne
+      // Grenze landet hier irgendwann ein ganzer Absatz und steht so auf der
+      // Speisekarte.
+      if (feld.config.creatable) {
+        if (wert.length > 20) {
+          fehler.push({ pfad, meldung: `${feld.label}: höchstens 20 Angaben.` })
+        }
+        for (const einzel of wert) {
+          const text = String(einzel).trim()
+          if (text === '' || text.length > 40) {
+            fehler.push({ pfad, meldung: `${feld.label}: „${text}" ist zu lang oder leer (höchstens 40 Zeichen).` })
+          }
+        }
+        break
+      }
+
       const erlaubt = feld.config.options
       if (erlaubt) {
         for (const einzel of wert) {
@@ -174,6 +205,7 @@ function pruefeEinzelwert(feld: Field, wert: unknown, pfad: string): Fehler[] {
     }
 
     case 'media':
+    case 'file':
     case 'reference':
       if (typeof wert !== 'string' || !/^[0-9a-f-]{36}$/i.test(wert)) {
         fehler.push({ pfad, meldung: `${feld.label} verweist auf nichts Gültiges.` })

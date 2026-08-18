@@ -2,6 +2,8 @@
 
 import type { Field, RepeaterRow } from '@/lib/fields'
 import { neueZeile } from '@/lib/fields'
+import { useState } from 'react'
+import { Dateifeld } from '@/components/Dateifeld'
 
 /**
  * Feldkomponente.
@@ -16,12 +18,13 @@ type Props = {
   feld: Field
   wert: unknown
   onChange: (wert: unknown) => void
+  umgebung: Feldumgebung
   gesperrt?: boolean
   /** Wert der Hauptsprache, wenn gerade eine Übersetzung bearbeitet wird. */
   vorlage?: unknown
 }
 
-export function Feld({ feld, wert, onChange, gesperrt, vorlage }: Props) {
+export function Feld({ feld, wert, onChange, umgebung, gesperrt, vorlage }: Props) {
   const id = `feld-${feld.id}`
   const gemeinsam = { id, disabled: gesperrt, 'aria-describedby': feld.help ? `${id}-hilfe` : undefined }
 
@@ -33,7 +36,7 @@ export function Feld({ feld, wert, onChange, gesperrt, vorlage }: Props) {
       </label>
       {feld.help && <p id={`${id}-hilfe`} className="leise">{feld.help}</p>}
 
-      {eingabe(feld, wert, onChange, gemeinsam)}
+      {eingabe(feld, wert, onChange, gemeinsam, umgebung)}
 
       {vorlage !== undefined && vorlage !== null && vorlage !== '' && leerWert(wert) && (
         <p className="leise">
@@ -50,7 +53,25 @@ function leerWert(w: unknown) {
 
 type Gemeinsam = { id: string; disabled?: boolean; 'aria-describedby'?: string }
 
-function eingabe(feld: Field, wert: unknown, onChange: (w: unknown) => void, g: Gemeinsam) {
+/**
+ * Umgebung, die einzelne Felder brauchen, aber nicht selbst kennen können:
+ * die Kennung des Mandanten (für den Upload) und seine Währung.
+ */
+export type Feldumgebung = {
+  tenantId: string
+  waehrung: string
+  /**
+   * Liefert für eine Wiederholgruppe die übersetzbaren Unterfelder samt Zugriff
+   * auf ihre Werte -- oder undefined, wenn gerade eine Übersetzung bearbeitet
+   * wird und die Zeilenkarte ohne sie auskommt.
+   */
+  zeilenUebersetzung?: (feld: Field) => ZeilenUebersetzung | undefined
+}
+
+function eingabe(
+  feld: Field, wert: unknown, onChange: (w: unknown) => void,
+  g: Gemeinsam, umgebung: Feldumgebung,
+) {
   switch (feld.type) {
     case 'textarea':
     case 'richtext':
@@ -78,19 +99,46 @@ function eingabe(feld: Field, wert: unknown, onChange: (w: unknown) => void, g: 
       )
 
     case 'number':
-    case 'price':
       return (
         <input
           {...g}
           type="text"
           inputMode="decimal"
           value={wert === null || wert === undefined ? '' : String(wert)}
-          placeholder={feld.type === 'price' ? '24.50' : ''}
           onChange={(e) => {
             const roh = e.target.value.trim().replace(',', '.')
             onChange(roh === '' ? null : Number.isNaN(Number(roh)) ? e.target.value : Number(roh))
           }}
         />
+      )
+
+    // Die Währung steht am Mandanten, nicht am Feld: Ein Betrieb rechnet in
+    // einer Währung, und ein Kunde in Konstanz soll seine Preise nicht in
+    // Franken auszeichnen.
+    case 'price':
+      return (
+        <span className="preisfeld">
+          <input
+            {...g}
+            type="text"
+            inputMode="decimal"
+            value={wert === null || wert === undefined ? '' : String(wert)}
+            placeholder="24.50"
+            onChange={(e) => {
+              const roh = e.target.value.trim().replace(',', '.')
+              onChange(roh === '' ? null : Number.isNaN(Number(roh)) ? e.target.value : Number(roh))
+            }}
+          />
+          <span className="leise waehrung">{umgebung.waehrung}</span>
+        </span>
+      )
+
+    // Echte Uhrzeit statt Freitext. Der Browser gibt „09:00" zurück, egal was
+    // getippt wurde -- vorher stand hier ein Textfeld, in das „X" passte.
+    case 'time':
+      return (
+        <input {...g} type="time" value={String(wert ?? '')}
+               onChange={(e) => onChange(e.target.value || null)} />
       )
 
     case 'date':
@@ -116,31 +164,33 @@ function eingabe(feld: Field, wert: unknown, onChange: (w: unknown) => void, g: 
     case 'multiselect': {
       const gewaehlt = Array.isArray(wert) ? (wert as string[]) : []
       return (
-        <div className="chips">
-          {(feld.config.options ?? []).map((o) => {
-            const an = gewaehlt.includes(o)
-            return (
-              <button
-                key={o}
-                type="button"
-                disabled={g.disabled}
-                aria-pressed={an}
-                className={an ? 'chip chip-an' : 'chip'}
-                onClick={() => onChange(an ? gewaehlt.filter((x) => x !== o) : [...gewaehlt, o])}
-              >
-                {o}
-              </button>
-            )
-          })}
-        </div>
+        <Mehrfachauswahl feld={feld} gewaehlt={gewaehlt} onChange={onChange} g={g} />
       )
     }
 
     case 'repeater':
-      return <Wiederholgruppe feld={feld} zeilen={Array.isArray(wert) ? (wert as RepeaterRow[]) : []}
-                              onChange={onChange} gesperrt={g.disabled} />
+      return (
+        <Wiederholgruppe
+          feld={feld} zeilen={Array.isArray(wert) ? (wert as RepeaterRow[]) : []}
+          onChange={onChange} gesperrt={g.disabled} umgebung={umgebung}
+          uebersetzung={umgebung.zeilenUebersetzung?.(feld)}
+        />
+      )
 
     case 'media':
+    case 'file':
+      return (
+        <Dateifeld
+          id={g.id}
+          tenantId={umgebung.tenantId}
+          wert={typeof wert === 'string' && wert !== '' ? wert : null}
+          nurDokumente={feld.type === 'file'}
+          gesperrt={g.disabled}
+          beschreibung={g['aria-describedby']}
+          onChange={onChange}
+        />
+      )
+
     case 'reference':
       return (
         <input {...g} type="text" value={String(wert ?? '')}
@@ -156,22 +206,110 @@ function eingabe(feld: Field, wert: unknown, onChange: (w: unknown) => void, g: 
 }
 
 /**
+ * Mehrfachauswahl mit optionaler Eigenergänzung.
+ *
+ * Die vorgegebene Liste ist bei Allergenen die gesetzliche -- sie bleibt
+ * vollständig, kürzen wäre eine Lücke in der Deklaration. Was gefehlt hat, ist
+ * der Platz für alles, was auf einer Karte steht und in keiner Verordnung:
+ * „scharf", „vegan", „hausgemacht". Deshalb creatable am Feld statt einer
+ * längeren festen Liste.
+ *
+ * Eigene Angaben stehen VOR der Vorschlagsliste: Was der Betrieb selbst
+ * eingetragen hat, benutzt er wieder.
+ */
+function Mehrfachauswahl({
+  feld, gewaehlt, onChange, g,
+}: {
+  feld: Field; gewaehlt: string[]; onChange: (w: unknown) => void; g: Gemeinsam
+}) {
+  const [neu, setNeu] = useState('')
+  const vorschlaege = feld.config.options ?? []
+  const eigene = gewaehlt.filter((w) => !vorschlaege.includes(w))
+
+  const umschalten = (o: string) =>
+    onChange(gewaehlt.includes(o) ? gewaehlt.filter((x) => x !== o) : [...gewaehlt, o])
+
+  const ergaenzen = () => {
+    const text = neu.trim()
+    if (text === '' || gewaehlt.includes(text)) { setNeu(''); return }
+    onChange([...gewaehlt, text])
+    setNeu('')
+  }
+
+  return (
+    <div className="stapel-eng">
+      <div className="chips">
+        {[...eigene, ...vorschlaege].map((o) => {
+          const an = gewaehlt.includes(o)
+          return (
+            <button key={o} type="button" disabled={g.disabled} aria-pressed={an}
+                    className={an ? 'chip chip-an' : 'chip'}
+                    onClick={() => umschalten(o)}>
+              {o}
+            </button>
+          )
+        })}
+      </div>
+
+      {feld.config.creatable && (
+        <div className="zeile" style={{ gap: 8 }}>
+          <input
+            type="text"
+            value={neu}
+            disabled={g.disabled}
+            placeholder="Eigene Angabe, z.B. scharf"
+            maxLength={40}
+            aria-label={`Eigene Angabe zu ${feld.label}`}
+            onChange={(e) => setNeu(e.target.value)}
+            // Enter im Formular würde sonst den ganzen Eintrag absenden.
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); ergaenzen() } }}
+          />
+          <button type="button" className="knopf-zweit" disabled={g.disabled || neu.trim() === ''}
+                  onClick={ergaenzen}>
+            Hinzufügen
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
  * Wiederholgruppe.
  *
- * Zeigt ausschliesslich die NICHT übersetzbaren Unterfelder -- Preis, Allergene.
- * Die übersetzbaren Unterfelder erscheinen im Sprachbereich darunter, damit die
- * Wirtin den Preis genau einmal pflegt und nicht viermal.
+ * EINE Karte pro Zeile, mit allen Feldern in der definierten Reihenfolge.
+ *
+ * Vorher standen die nicht übersetzbaren Felder (Preis, Allergene) und die
+ * übersetzbaren (Gericht, Beschreibung) in zwei getrennten Blöcken
+ * untereinander -- weil sie technisch verschieden gespeichert werden: die einen
+ * an der Zeile, die anderen pro Sprache. Für die Wirtin bedeutete das fünf
+ * Karten mit Preisen, darunter fünf Karten mit Gerichtsnamen, und der Preis von
+ * „Salade verte" stand zwei Bildschirme entfernt von „Salade verte".
+ *
+ * Wie etwas gespeichert wird, ist kein Grund, es getrennt anzuzeigen. In einer
+ * Übersetzung bleibt die Trennung sinnvoll -- dort werden Preise gar nicht
+ * gezeigt --, in der Hauptsprache nicht.
  *
  * Sortiert wird mit Hoch/Runter-Knöpfen statt echtem Ziehen: Auf dem Handy ist
  * Drag & Drop in einer scrollenden Liste unzuverlässig, und Tastaturbedienung
  * bekommt man gratis dazu.
  */
+export type ZeilenUebersetzung = {
+  /** Übersetzbare Unterfelder, die MIT in die Zeilenkarte gehören. */
+  felder: Field[]
+  wert: (zeilenId: string, feldKey: string) => unknown
+  setze: (zeilenId: string, feldKey: string, wert: unknown) => void
+}
+
 function Wiederholgruppe({
-  feld, zeilen, onChange, gesperrt,
+  feld, zeilen, onChange, gesperrt, umgebung, uebersetzung,
 }: {
-  feld: Field; zeilen: RepeaterRow[]; onChange: (w: unknown) => void; gesperrt?: boolean
+  feld: Field; zeilen: RepeaterRow[]; onChange: (w: unknown) => void
+  gesperrt?: boolean; umgebung: Feldumgebung; uebersetzung?: ZeilenUebersetzung
 }) {
   const eigene = feld.children.filter((k) => !k.translatable)
+  // Reihenfolge wie definiert, nicht „erst technisch A, dann technisch B".
+  const alle = [...eigene, ...(uebersetzung?.felder ?? [])].sort((a, b) => a.position - b.position)
 
   const setze = (i: number, key: string, v: unknown) => {
     const kopie = zeilen.map((z, j) => (j === i ? { ...z, [key]: v } : z))
@@ -201,9 +339,15 @@ function Wiederholgruppe({
                       onClick={() => onChange(zeilen.filter((_, j) => j !== i))}>×</button>
             </span>
           </div>
-          {eigene.map((kind) => (
-            <Feld key={kind.id} feld={kind} wert={zeile[kind.key]} gesperrt={gesperrt}
-                  onChange={(v) => setze(i, kind.key, v)} />
+          {alle.map((kind) => (
+            kind.translatable && uebersetzung ? (
+              <Feld key={kind.id} feld={kind} umgebung={umgebung} gesperrt={gesperrt}
+                    wert={uebersetzung.wert(zeile._id, kind.key)}
+                    onChange={(v) => uebersetzung.setze(zeile._id, kind.key, v)} />
+            ) : (
+              <Feld key={kind.id} feld={kind} wert={zeile[kind.key]} gesperrt={gesperrt}
+                    umgebung={umgebung} onChange={(v) => setze(i, kind.key, v)} />
+            )
           ))}
         </div>
       ))}

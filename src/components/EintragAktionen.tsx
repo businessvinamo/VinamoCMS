@@ -41,8 +41,8 @@ export function EintragAktionen({
         {hatVersion && (
           <>
             <p className="leise">
-              Setzt deinen Entwurf auf den zuletzt veröffentlichten Stand zurück.
-              Was auf der Website steht, ändert sich dabei nicht.
+              Verwirft deine ungespeicherten Änderungen und holt zurück, was
+              gerade auf der Website steht. Die Website selbst ändert sich nicht.
             </p>
             <button type="button" className="knopf-zweit" disabled={laeuft}
                     onClick={() => {
@@ -56,8 +56,8 @@ export function EintragAktionen({
 
         <p className="leise">
           {istArchiviert
-            ? 'Zurückholen stellt den Eintrag als Entwurf wieder her. Danach kannst du ihn erneut veröffentlichen.'
-            : 'Archivieren nimmt den Eintrag von der Website. Nichts geht verloren — du kannst ihn jederzeit zurückholen.'}
+            ? 'Der Eintrag ist zurzeit nicht auf der Website. Zurückholen macht ihn wieder zum Entwurf, den du erneut veröffentlichen kannst.'
+            : 'Nimmt den Eintrag von der Website, behält ihn aber hier. Du kannst ihn jederzeit zurückholen.'}
         </p>
         <button type="button" className="knopf-zweit" disabled={laeuft}
                 onClick={() => tun(() => archivieren(tenantSlug, typeKey, entryId, !istArchiviert))}>
@@ -65,8 +65,9 @@ export function EintragAktionen({
         </button>
 
         <p className="leise">
-          Löschen ist endgültig — samt Übersetzungen und Versionsverlauf. Meist
-          ist Archivieren gemeint.
+          Löscht den Eintrag samt Übersetzungen und Versionsverlauf. Das lässt
+          sich nicht rückgängig machen. Wenn er nur von der Website verschwinden
+          soll, nimm ihn oben von der Website.
         </p>
         <button type="button" className="knopf-klein knopf-weg" disabled={laeuft}
                 onClick={() => {
