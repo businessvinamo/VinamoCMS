@@ -1,7 +1,26 @@
 import { chromium } from 'playwright-core'
 
 export const BASIS = process.env.QA_BASIS ?? 'http://localhost:4900'
-export const PW = 'QaTest!2026-vinamo'
+/*
+  Kein Passwort im Quelltext.
+
+  Beim ersten Ablegen dieser Skripte stand hier eines -- und damit ein
+  funktionierendes Plattformadministrator-Konto in einem oeffentlichen
+  Repository. Testkonten sind echte Konten in einer echten Datenbank; ihr
+  Passwort gehoert in die Umgebung, nicht in eine Datei, die gepusht wird.
+*/
+export const PW = process.env.QA_PASSWORT ?? ''
+export const PW_GEWECHSELT = process.env.QA_PASSWORT_NEU ?? ''
+
+if (!PW || !PW_GEWECHSELT) {
+  console.error(
+    'QA_PASSWORT und QA_PASSWORT_NEU muessen gesetzt sein.\n' +
+    '  export QA_PASSWORT="…"       Startpasswort der drei qa-Konten\n' +
+    '  export QA_PASSWORT_NEU="…"   Zielpasswort fuer den Wechseltest (darf die\n' +
+    '                               eigene Adresse nicht enthalten)',
+  )
+  process.exit(2)
+}
 export const KONTEN = {
   admin: 'qa-admin@vinamo-test.invalid',
   chef: 'qa-chef@vinamo-test.invalid',

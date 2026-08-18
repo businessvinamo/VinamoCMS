@@ -1,7 +1,7 @@
-import { BASIS, PW, KONTEN, anmelden, browser, pruefe, bilanz, text } from './hilfe.mjs'
+import { BASIS, PW_GEWECHSELT, KONTEN, anmelden, browser, pruefe, bilanz, text } from './hilfe.mjs'
 import { readFileSync } from 'node:fs'
 const K = readFileSync('kennung.txt', 'utf8').trim()
-const NEU = 'gruener Sessel im Flur 84'
+const NEU = PW_GEWECHSELT
 
 const b = await browser()
 

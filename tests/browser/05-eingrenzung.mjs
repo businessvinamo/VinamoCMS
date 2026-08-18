@@ -1,7 +1,7 @@
-import { BASIS, KONTEN, browser, pruefe, bilanz, text } from './hilfe.mjs'
+import { BASIS, PW, PW_GEWECHSELT, KONTEN, browser, pruefe, bilanz, text } from './hilfe.mjs'
 import { readFileSync } from 'node:fs'
 const K = readFileSync('kennung.txt', 'utf8').trim()
-const NEU = 'gruener Sessel im Flur 84'
+const NEU = PW_GEWECHSELT
 
 const b = await browser()
 const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } })
@@ -21,7 +21,7 @@ const ctx2 = await b.newContext()
 const p2 = await ctx2.newPage()
 await p2.goto(`${BASIS}/login`, { waitUntil: 'networkidle' })
 await p2.fill('#email', KONTEN.hilfe)
-await p2.fill('#passwort', 'QaTest!2026-vinamo')
+await p2.fill('#passwort', PW)
 await p2.click('form:has(#passwort) button[type="submit"]')
 await p2.waitForTimeout(4000)
 pruefe('Altes Startpasswort gilt nicht mehr', p2.url().includes('/login'), p2.url())

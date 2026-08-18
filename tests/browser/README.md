@@ -14,7 +14,17 @@ Pull-Request-Bau nicht mitbringt.
 ```bash
 npm i --no-save playwright-core          # bewusst nicht in package.json
 export QA_BASIS=http://localhost:4900    # Standard, anpassbar
+export QA_PASSWORT="…"                   # Passwort der drei qa-Konten
+export QA_PASSWORT_NEU="…"               # Zielpasswort fuer den Wechseltest
 ```
+
+Die Passwörter stehen **nicht** im Quelltext. Beim ersten Ablegen dieser Skripte
+war das anders — und damit lag ein funktionierendes
+Plattformadministrator-Konto in einem öffentlichen Repository. Testkonten sind
+echte Konten in einer echten Datenbank.
+
+`QA_PASSWORT_NEU` darf die eigene Adresse des Kontos nicht enthalten, sonst
+weist die Passwortprüfung es zurecht ab.
 
 `playwright-core` steht absichtlich **nicht** in den Abhängigkeiten: Es lag dort
 schon einmal, ohne im Lockfile zu stehen, und hat `npm ci` in CI zerlegt.
@@ -24,7 +34,7 @@ Chromium-Version der Entwicklungsumgebung.
 
 ## Konten
 
-Die Tests erwarten drei Konten mit dem Passwort aus `hilfe.mjs`:
+Die Tests erwarten drei Konten mit dem Passwort aus `QA_PASSWORT`:
 
 | Konto | Rolle |
 | --- | --- |
