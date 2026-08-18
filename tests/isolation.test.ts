@@ -210,6 +210,37 @@ describe('Grenzen der Rolle client', () => {
     expect(data).toBe(false)
   })
 
+  it('mehrere Mitglieder ergeben trotzdem genau eine Mitgliedschaft', async () => {
+    // Regression: listMemberships() verliess sich auf RLS statt auf einen
+    // user_id-Filter. Weil Mitglieder desselben Mandanten einander sehen
+    // duerfen -- was fuer die Benutzerverwaltung noetig ist --, kam pro Mitglied
+    // eine Zeile zurueck und der Mandant erschien in der Uebersicht doppelt.
+    const mail = `iso-zweiter-${Date.now()}@vinamo-test.invalid`
+    const zweiter = await admin.auth.admin.createUser({
+      email: mail, password: KENNWORT, email_confirm: true,
+    })
+    if (zweiter.error) throw zweiter.error
+
+    const { error: eintragen } = await admin.from('tenant_members').insert({
+      tenant_id: tenantA, user_id: zweiter.data.user!.id, role: 'client',
+    })
+    if (eintragen) throw eintragen
+
+    // Ohne Filter -- so sah die Abfrage vorher aus. Zwei Zeilen sind hier
+    // korrekt und beweisen, dass RLS nicht die gesuchte Grenze ist.
+    const ohneFilter = await alsA.from('tenant_members').select('tenant_id')
+    expect(ohneFilter.data).toHaveLength(2)
+
+    // So sieht sie jetzt aus.
+    const meine = await alsA
+      .from('tenant_members')
+      .select('tenant_id')
+      .eq('user_id', userA)
+    expect(meine.data).toEqual([{ tenant_id: tenantA }])
+
+    await admin.auth.admin.deleteUser(zweiter.data.user!.id)
+  })
+
   it('ein client kann niemanden in einen fremden Mandanten eintragen', async () => {
     const mail = `iso-fremd-${Date.now()}@vinamo-test.invalid`
     const neu = await admin.auth.admin.createUser({

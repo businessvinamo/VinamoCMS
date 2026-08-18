@@ -45,15 +45,25 @@ export async function isPlatformAdmin(): Promise<boolean> {
 /**
  * Alle Mandanten des Benutzers.
  *
- * Es steht keine Einschränkung auf den Benutzer in der Abfrage -- die macht RLS.
- * Genau das ist der Punkt: Die Trennung liegt an einer Stelle, nicht verstreut
- * in jeder Abfrage, wo sie irgendwann jemand vergisst.
+ * Die Einschränkung auf den Benutzer steht ausdrücklich in der Abfrage.
+ *
+ * Vorher stand hier nur RLS -- mit der Begründung, die Trennung gehöre an eine
+ * Stelle. Das war eine Verwechslung: RLS beantwortet "welche Zeilen darf ich
+ * sehen", nicht "welche Zeilen sind meine". Die Richtlinie auf tenant_members
+ * lässt Mitglieder desselben Mandanten einander sehen -- das ist richtig und für
+ * die Benutzerverwaltung nötig. Ohne user_id-Filter kam deshalb pro Mitglied
+ * eine Zeile zurück, und der Mandant erschien auf der Startseite doppelt,
+ * sobald ein zweiter Zugang angelegt wurde.
  */
 export async function listMemberships(): Promise<Membership[]> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
   const { data, error } = await supabase
     .from('tenant_members')
     .select('role, tenant:tenants(id, slug, name, locales, default_locale, timezone, branding, is_active)')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: true })
 
   if (error) throw new Error(`Mandanten konnten nicht geladen werden: ${error.message}`)
@@ -82,11 +92,18 @@ export async function requireTenant(slug: string): Promise<{ tenant: Tenant; rol
   if (error) throw new Error(`Mandant konnte nicht geladen werden: ${error.message}`)
   if (!tenant) redirect('/?unbekannt=1')
 
-  const { data: membership } = await supabase
-    .from('tenant_members')
-    .select('role')
-    .eq('tenant_id', tenant.id)
-    .maybeSingle()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // .eq('user_id', ...) ist hier nicht optional: Ohne den Filter liefert die
+  // Abfrage bei zwei Mitgliedern zwei Zeilen, und maybeSingle() wird zum Fehler.
+  const { data: membership } = user
+    ? await supabase
+        .from('tenant_members')
+        .select('role')
+        .eq('tenant_id', tenant.id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+    : { data: null }
 
   // Kein Eintrag heisst: ein Admin ohne eigene Mitgliedschaft in diesem
   // Mandanten. Der darf trotzdem alles -- can_manage_tenant() deckt beides ab.

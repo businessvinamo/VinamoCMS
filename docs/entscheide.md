@@ -581,3 +581,60 @@ Die Reihenfolge ist Absicht. Archivieren ist fast immer gemeint, wenn jemand
 „löschen" sagt — der Eintrag soll von der Website verschwinden, nicht aus der
 Welt. Deshalb steht es davor, ist umkehrbar, und der Löschknopf trägt den Zusatz
 „Meist ist Archivieren gemeint."
+
+---
+
+## 29 · RLS beantwortet „darf ich das sehen", nicht „gehört das mir"
+
+Kevin legte einen zweiten Zugang für den Testmandanten an, und der Mandant
+erschien danach zweimal in der Übersicht.
+
+In der Datenbank war nichts doppelt — jeder Benutzer hatte genau eine
+Mitgliedschaft. Doppelt war die Abfrage:
+
+```ts
+// vorher
+supabase.from('tenant_members').select('role, tenant:tenants(…)')
+```
+
+Kein Filter auf den Benutzer, und im Kommentar darüber stand die Begründung:
+das mache RLS, und die Trennung gehöre an eine Stelle statt verstreut in jede
+Abfrage. Das war eine Verwechslung zweier verschiedener Fragen.
+
+RLS beantwortet **„welche Zeilen darf ich sehen"**. Die Richtlinie auf
+`tenant_members` lautet `is_tenant_member(tenant_id)` — Mitglieder desselben
+Mandanten sehen einander. Das ist richtig und für die Benutzerverwaltung
+notwendig: Ohne das könnte niemand die Zugangsliste seiner eigenen Website
+öffnen.
+
+Die Übersicht stellt aber eine andere Frage: **„welche Zeilen sind meine"**.
+Darauf gibt RLS keine Antwort, und darf es auch nicht. Mit zwei Mitgliedern kam
+pro Mitglied eine Zeile zurück, beide verknüpft mit demselben Mandanten — auf
+der Startseite und unter „Einstellungen" zweimal derselbe Eintrag.
+
+Nachgewiesen mit Impersonation gegen die Produktionsdatenbank, aus Joels Sicht:
+
+| Abfrage | Zeilen | Mandanten |
+| --- | --- | --- |
+| ohne `user_id`-Filter | 2 | `vinamo-test, vinamo-test` |
+| mit `.eq('user_id', …)` | 1 | `vinamo-test` |
+
+Zwei Folgen, die schlimmer waren als die doppelte Kachel:
+
+**Der Direkteinstieg fiel aus.** Die Übersicht leitet bei genau einer
+Mitgliedschaft sofort in den Mandanten weiter — der Normalfall für jeden Kunden.
+`length === 1` war nicht mehr wahr, also landete Joel auf einer Auswahlseite mit
+einer einzigen, doppelt aufgeführten Option.
+
+**`requireTenant()` hatte denselben Fehler, schärfer.** Dort stand
+`.eq('tenant_id', …).maybeSingle()` ohne Benutzerfilter. `maybeSingle()` ist bei
+zwei Zeilen ein Fehler; der Fehler wurde nicht ausgewertet, die Rolle wurde
+still `null`. Bei drei Mitgliedern hätte das jede Mandantenseite getroffen, nicht
+nur die Übersicht.
+
+Die Lehre steht jetzt als Kommentar an beiden Stellen: **Wo „meine" gemeint ist,
+gehört der Filter in die Abfrage.** RLS ist die Grenze nach aussen, nicht die
+Auswahl nach innen. Ein Regressionsfall in `tests/isolation.test.ts` trägt beide
+Varianten nebeneinander — die ungefilterte Abfrage *soll* dort zwei Zeilen
+liefern, denn genau das ist der Beweis, dass RLS hier nicht die gesuchte Grenze
+ist.
