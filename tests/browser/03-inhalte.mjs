@@ -14,6 +14,16 @@ const typen = await p.locator('a[href*="/t/' + K + '/"]').evaluateAll((as) =>
   as.map((a) => a.getAttribute('href')).filter((h) => h.split('/').length === 4))
 pruefe('Client sieht Inhaltstypen', typen.length >= 3, typen.join(' '))
 
+// Karten muessen waagrecht stehen: Titel links, Pfeil rechts.
+const gestapelt = await p.locator('.karte-klick').evaluateAll((as) =>
+  as.filter((a) => getComputedStyle(a).flexDirection !== 'row')
+    .map((a) => a.textContent.trim().slice(0, 24)))
+pruefe('Karten stehen waagrecht', gestapelt.length === 0, gestapelt.join(', '))
+
+// Behelfsschreibung darf nicht in der Oberflaeche landen.
+const behelf = (await text(p)).match(/\b(Oe|Ue|Ae)[a-zäöüß]+/g) ?? []
+pruefe('Umlaute statt ae/oe/ue', behelf.length === 0, behelf.join(', '))
+
 // --- News: Eintrag anlegen ---------------------------------------------------
 await p.goto(`${BASIS}/t/${K}/news`, { waitUntil: 'networkidle' })
 await p.click('button:has-text("Neu"), a:has-text("Neu")')

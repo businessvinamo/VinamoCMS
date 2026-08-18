@@ -93,8 +93,7 @@ export function Zugaenge({
       {!darfVerwalten && (
         <p className="leise">
           Du siehst, wer Zugang hat. Zugänge anlegen, entfernen und Passwörter
-          zurücksetzen darf nur, wer dafür freigeschaltet ist — melde dich bei
-          Vinamo oder bei jemandem mit diesem Recht.
+          zurücksetzen übernimmt Vinamo — melde dich bei uns.
         </p>
       )}
 

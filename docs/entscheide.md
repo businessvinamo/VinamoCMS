@@ -788,3 +788,65 @@ lässt sich nicht fälschen (`auth.uid()`).
 In der Supabase-Konsole ist **„Leaked Password Protection" ausgeschaltet** —
 der Abgleich gegen HaveIBeenPwned. Das ist ein Haken im Dashboard, kein Code,
 und sollte gesetzt werden.
+
+---
+
+## 32 · Was der Kunde sieht, ist nicht, was die Datenbank weiss
+
+Vier Rückmeldungen zur Mandantenseite, alle am selben Tag, alle dasselbe
+Grundproblem: Die Seite zeigte den Aufbau des Systems statt der Arbeit des
+Kunden.
+
+### Jede anklickbare Karte war senkrecht gestapelt
+
+```css
+.karte      { display: flex; flex-direction: column; }
+.karte-klick{ display: flex; justify-content: space-between; align-items: center; }
+```
+
+Beide Klassen hängen am selben Element. `flex-direction` steht nur in der
+ersten — die zweite überschreibt sie nicht, weil sie sie gar nicht setzt. Also
+blieb `column`, und `align-items: center` schob Titel, Beschreibung und Pfeil
+brav in die Mitte. Betroffen war **jede** Liste im ganzen Admin: Websites,
+Mandanten, Inhaltstypen, Einträge.
+
+Dass meine Handytests das nicht fanden, ist die eigentliche Lehre: Sie massen
+Trefferflächen und Querscrollen — beides war korrekt. Ein senkrecht gestapelter
+Knopf ist 94 px hoch und scrollt nicht quer. Die Tests prüfen jetzt zusätzlich
+`flex-direction` jeder Karte.
+
+### „Oeffnungszeiten"
+
+Die Seed-Daten schrieben durchgehend `ae`/`oe`/`ue`. Der React-Teil war von
+Anfang an korrekt — deshalb fiel es lange nicht auf: Die Oberfläche sah sauber
+aus, bis die Inhaltstypen darin auftauchten. Migration 0021 korrigiert Daten,
+kein Code, und ein Constraint hält die Behelfsschreibung künftig draussen.
+
+### „Freigeschaltet" mit nackten Schlüsseln
+
+`content_editor`, `translations`, `repeaters` — Vinamo-Interna, in einer
+Sprache, die der Kunde nicht spricht, ohne Knopf und ohne Erklärung. Verwaltet
+werden sie ohnehin unter `/admin/<kennung>`, dort mit Beschreibung und Schalter.
+Die Karte ist auf der Kundenseite weg; der Admin bekommt stattdessen einen Link
+dorthin.
+
+Aus demselben Grund gingen zwei weitere Dinge: die Mandanten-Kennung unter dem
+Titel (steht in der Lese-API, nicht im Alltag der Wirtin — für den Admin bleibt
+sie) und die Zugangsliste aus abgeschnittenen Benutzerkennungen (`a4d16212…`),
+wo jetzt E-Mail-Adressen stehen.
+
+### „← Alle Websites" bei genau einer Website
+
+Der Kunde hat eine Website. Die Übersicht leitet ihn deshalb direkt in seinen
+Mandanten — der Link zurück führte auf eine Seite, die er nie zu sehen bekommt.
+Er erscheint jetzt nur bei mehr als einer Mitgliedschaft oder für den Admin.
+
+### Und die Reihenfolge
+
+Oben stand Sprachen, dann Zugänge, dann Protokoll, dann Freigeschaltet — und
+ganz unten, nach viermal Scrollen, das Einzige, wofür der Kunde gekommen ist.
+„Inhalte pflegen" steht jetzt zuoberst.
+
+**Der gemeinsame Nenner:** Die Seite war aus der Sicht dessen gebaut, der das
+System kennt. Für die Wirtin ist eine Mandanten-Kennung kein Ordnungsmerkmal,
+sondern eine Zeichenfolge, die sie beunruhigt.

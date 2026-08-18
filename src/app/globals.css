@@ -71,11 +71,24 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   display: flex; flex-direction: column; gap: 10px;
 }
 
+/*
+  Anklickbare Karte: Text links, Pfeil rechts.
+
+  flex-direction: row MUSS hier stehen. .karte setzt column, und weil beide
+  Klassen am selben Element hängen, gewinnt nicht die spätere Regel, sondern die
+  einzige, die die Eigenschaft überhaupt setzt. Ohne diese Zeile stapelte sich
+  jede Karte senkrecht und align-items: center schob Titel, Beschreibung und
+  Pfeil in die Mitte -- auf jeder Liste im ganzen Admin.
+*/
 .karte-klick {
-  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  display: flex; flex-direction: row;
+  justify-content: space-between; align-items: center; gap: 16px;
   min-height: var(--touch);
   text-decoration: none; color: inherit;
 }
+/* Der Textblock darf schrumpfen, damit der Pfeil nicht abgedrängt wird. */
+.karte-klick > .stapel-eng { min-width: 0; flex: 1 1 auto; align-items: flex-start; }
+.karte-klick > .stapel-eng > * { text-align: left; }
 .karte-klick:hover { border-color: var(--violett); }
 
 .leise { color: var(--text-leise); font-size: 14px; }
