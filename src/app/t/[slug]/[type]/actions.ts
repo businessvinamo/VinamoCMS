@@ -204,3 +204,66 @@ function uebersetzeFehler(meldung: string): string {
   console.error('[content] unbehandelter Datenbankfehler', meldung)
   return 'Das hat nicht geklappt. Bitte nochmals versuchen.'
 }
+
+/**
+ * Eintrag löschen.
+ *
+ * Endgültig, inklusive Übersetzungen und Versionshistorie (Cascade). Für den
+ * Fall "soll nur von der Website verschwinden" gibt es archiviere() -- das ist
+ * fast immer gemeint und umkehrbar.
+ */
+export async function loescheEintrag(
+  tenantSlug: string, typeKey: string, entryId: string,
+): Promise<SpeicherErgebnis> {
+  const { tenant } = await requireTenant(tenantSlug)
+  const supabase = await createClient()
+
+  const { error } = await supabase.from('entries').delete()
+    .eq('id', entryId).eq('tenant_id', tenant.id)
+
+  if (error) return { ok: false, fehler: [{ pfad: '', meldung: uebersetzeFehler(error.message) }] }
+
+  await supabase.rpc('log_audit', {
+    p_tenant_id: tenant.id, p_action: 'entry.deleted',
+    p_target_type: 'entry', p_target_id: entryId, p_meta: { content_type: typeKey },
+  })
+  await sendeWebhooks(tenant.id, 'entry.published', {
+    tenant: tenant.slug, content_type: typeKey, entry_id: entryId, grund: 'geloescht',
+  })
+
+  revalidatePath(`/t/${tenantSlug}/${typeKey}`)
+  return { ok: true, gespeichertUm: new Date().toISOString() }
+}
+
+/**
+ * Von der Website nehmen oder zurückholen.
+ *
+ * Archiviert bleibt der Eintrag samt Historie erhalten und lässt sich jederzeit
+ * wieder veröffentlichen -- der Normalfall für "das soll gerade nicht mehr
+ * sichtbar sein".
+ */
+export async function archiviere(
+  tenantSlug: string, typeKey: string, entryId: string, archivieren: boolean,
+): Promise<SpeicherErgebnis> {
+  const { tenant } = await requireTenant(tenantSlug)
+  const supabase = await createClient()
+
+  const { error } = await supabase.from('entries')
+    .update({ status: archivieren ? 'archived' : 'draft' })
+    .eq('id', entryId).eq('tenant_id', tenant.id)
+
+  if (error) return { ok: false, fehler: [{ pfad: '', meldung: uebersetzeFehler(error.message) }] }
+
+  await supabase.rpc('log_audit', {
+    p_tenant_id: tenant.id,
+    p_action: archivieren ? 'entry.archived' : 'entry.unarchived',
+    p_target_type: 'entry', p_target_id: entryId, p_meta: {},
+  })
+  await sendeWebhooks(tenant.id, 'entry.published', {
+    tenant: tenant.slug, content_type: typeKey, entry_id: entryId,
+    grund: archivieren ? 'archiviert' : 'zurueckgeholt',
+  })
+
+  revalidatePath(`/t/${tenantSlug}/${typeKey}`)
+  return { ok: true, gespeichertUm: new Date().toISOString() }
+}

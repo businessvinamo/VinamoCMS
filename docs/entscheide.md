@@ -526,3 +526,58 @@ statt sie zu vermessen.
 | Gesperrte Knöpfe | sahen aktiv aus | 40 % Deckkraft |
 
 Kein Quer-Scroll auf keiner der sechs Seiten.
+
+---
+
+## 26 · Abmelden gab es nicht
+
+Bei der Bestandsaufnahme gefunden: Drei Server-Actions existierten, waren aber
+an keine Oberfläche angeschlossen — `abmelden`, `sortiere` und
+`stelleLetzteVersionWiederHer`. Bei der ersten heisst das: **Niemand konnte sich
+abmelden.** Auf einem gemeinsam genutzten Gerät im Restaurant ist das kein
+Schönheitsfehler.
+
+Ursache war ein fehlender Rahmen: Jede Seite fing bei `<Marke />` an, es gab
+nirgends eine Navigation. Neu `<Kopfzeile />` auf allen angemeldeten Seiten, mit
+Einstellungen und Abmelden.
+
+**Lehre für die Bestandsaufnahme:** Eine exportierte Funktion ist kein Feature.
+Der Abgleich „welche Aktionen gibt es" gegen „welche werden in einer Komponente
+verwendet" fand in Sekunden, was beim Durchklicken nicht auffällt — man klickt
+ja auf das, was da ist.
+
+---
+
+## 27 · Passwort ändern verlangt das aktuelle Passwort
+
+`/einstellungen` erlaubt jedem Angemeldeten, sein Passwort selbst zu ändern.
+Verlangt wird dabei das **aktuelle** Passwort, obwohl Supabase das von sich aus
+nicht tut.
+
+**Warum:** Ohne diese Prüfung genügt ein unbeaufsichtigter Laptop, um das Konto
+zu übernehmen — der Angreifer setzt ein neues Passwort und sperrt den Eigentümer
+aus. Für eine Wirtin, deren Laptop im Büro hinter der Küche steht, ist das kein
+theoretisches Szenario.
+
+Nebenbehoben: `adminClient()` wirft **synchron**, wenn der Service-Schlüssel
+fehlt. Ein angehängtes `.catch()` greift dort nicht, weil es nie eine Promise
+gibt. Die ganze Passwortänderung wäre an einer Nebensache gescheitert, obwohl
+das Passwort bereits gespeichert war.
+
+**Und eine Lehre über das Prüfen:** Mein erster Testlauf meldete, der Benutzer
+werde beim Passwortwechsel abgemeldet. Tatsächlich traf `button[type="submit"]`
+den Abmelden-Knopf in der neuen Kopfzeile, der im DOM zuerst steht. Kein Fehler
+der Anwendung, sondern ein zu grober Selektor — beinahe hätte ich einen Fehler
+gemeldet, den es nicht gab.
+
+---
+
+## 28 · Eintrag archivieren statt löschen
+
+Neu im Editor unter „Weitere Aktionen": Entwurf auf den veröffentlichten Stand
+zurücksetzen, von der Website nehmen, endgültig löschen.
+
+Die Reihenfolge ist Absicht. Archivieren ist fast immer gemeint, wenn jemand
+„löschen" sagt — der Eintrag soll von der Website verschwinden, nicht aus der
+Welt. Deshalb steht es davor, ist umkehrbar, und der Löschknopf trägt den Zusatz
+„Meist ist Archivieren gemeint."

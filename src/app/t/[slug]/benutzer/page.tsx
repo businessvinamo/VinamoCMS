@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Marke } from '@/components/Marke'
+import { Kopfzeile } from '@/components/Kopfzeile'
 import { Zugaenge } from '@/components/Zugaenge'
 import { createClient } from '@/lib/supabase/server'
 import { requireTenant, requireUser } from '@/lib/tenant'
@@ -31,7 +31,7 @@ export default async function BenutzerSeite({
 
   return (
     <main className="huelle">
-      <Marke />
+      <Kopfzeile email={ich.email} />
       <div className="stapel">
         <div className="stapel-eng">
           <Link href={`/t/${slug}`} className="leise">← {tenant.name}</Link>

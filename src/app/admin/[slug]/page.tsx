@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Marke } from '@/components/Marke'
+import { Kopfzeile } from '@/components/Kopfzeile'
 import { MandantSchalter } from '@/components/MandantSchalter'
 import { createClient } from '@/lib/supabase/server'
 import { isPlatformAdmin, requireUser } from '@/lib/tenant'
@@ -13,7 +13,7 @@ export default async function MandantVerwalten({
   params,
 }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  await requireUser()
+  const nutzer = await requireUser()
   if (!(await isPlatformAdmin())) redirect('/')
 
   const supabase = await createClient()
@@ -35,7 +35,7 @@ export default async function MandantVerwalten({
 
   return (
     <main className="huelle">
-      <Marke />
+      <Kopfzeile email={nutzer.email} />
       <div className="stapel">
         <div className="stapel-eng">
           <Link href="/admin" className="leise">← Mandanten</Link>

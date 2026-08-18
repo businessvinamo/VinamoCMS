@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Marke } from '@/components/Marke'
+import { Kopfzeile } from '@/components/Kopfzeile'
 import { anzeigezustand, ladeEintraege, ladeInhaltstypen, ZUSTAND_TEXT } from '@/lib/content'
 import { requireTenant, requireUser } from '@/lib/tenant'
 import { NeuKnopf } from '@/components/NeuKnopf'
@@ -11,7 +11,7 @@ export default async function ListenSeite({
   params,
 }: { params: Promise<{ slug: string; type: string }> }) {
   const { slug, type } = await params
-  await requireUser()
+  const nutzer = await requireUser()
   const { tenant } = await requireTenant(slug)
 
   const typen = await ladeInhaltstypen(tenant.id)
@@ -37,7 +37,7 @@ export default async function ListenSeite({
 
   return (
     <main className="huelle">
-      <Marke />
+      <Kopfzeile email={nutzer.email} />
       <div className="stapel">
         <div className="stapel-eng">
           <Link href={`/t/${slug}`} className="leise">← {tenant.name}</Link>

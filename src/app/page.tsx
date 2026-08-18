@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Marke } from '@/components/Marke'
+import { Kopfzeile } from '@/components/Kopfzeile'
 import { isPlatformAdmin, listMemberships, requireUser } from '@/lib/tenant'
 
 export const dynamic = 'force-dynamic'
@@ -28,7 +28,7 @@ export default async function Uebersicht({
 
   return (
     <main className="huelle">
-      <Marke />
+      <Kopfzeile email={user.email} />
       <div className="stapel">
         <div className="stapel-eng">
           <h1>Deine Websites</h1>

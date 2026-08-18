@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Marke } from '@/components/Marke'
+import { Kopfzeile } from '@/components/Kopfzeile'
 import { createClient } from '@/lib/supabase/server'
 import { requireTenant, requireUser } from '@/lib/tenant'
 
@@ -21,7 +21,7 @@ export default async function ProtokollSeite({
   params,
 }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  await requireUser()
+  const nutzer = await requireUser()
   const { tenant } = await requireTenant(slug)
   const supabase = await createClient()
 
@@ -38,7 +38,7 @@ export default async function ProtokollSeite({
 
   return (
     <main className="huelle">
-      <Marke />
+      <Kopfzeile email={nutzer.email} />
       <div className="stapel">
         <div className="stapel-eng">
           <Link href={`/t/${slug}`} className="leise">← {tenant.name}</Link>

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Marke } from '@/components/Marke'
+import { Kopfzeile } from '@/components/Kopfzeile'
 import { createClient } from '@/lib/supabase/server'
 import { isPlatformAdmin, requireUser } from '@/lib/tenant'
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 /** Übersicht aller Mandanten. Nur für die Rolle admin. */
 export default async function AdminSeite() {
-  await requireUser()
+  const nutzer = await requireUser()
   if (!(await isPlatformAdmin())) redirect('/')
 
   const supabase = await createClient()
@@ -23,7 +23,7 @@ export default async function AdminSeite() {
 
   return (
     <main className="huelle">
-      <Marke />
+      <Kopfzeile email={nutzer.email} />
       <div className="stapel">
         <div className="stapel-eng">
           <Link href="/" className="leise">← Deine Websites</Link>

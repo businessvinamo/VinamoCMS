@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Marke } from '@/components/Marke'
+import { Kopfzeile } from '@/components/Kopfzeile'
 import { createClient } from '@/lib/supabase/server'
 import { isPlatformAdmin, requireTenant, requireUser } from '@/lib/tenant'
 import { ladeInhaltstypen } from '@/lib/content'
@@ -23,7 +23,7 @@ export default async function MandantSeite({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  await requireUser()
+  const nutzer = await requireUser()
 
   const { tenant, role } = await requireTenant(slug)
   const istAdmin = await isPlatformAdmin()
@@ -39,7 +39,7 @@ export default async function MandantSeite({
 
   return (
     <main className="huelle">
-      <Marke />
+      <Kopfzeile email={nutzer.email} />
       <div className="stapel">
         <div className="stapel-eng">
           <Link href="/" className="leise">← Alle Websites</Link>

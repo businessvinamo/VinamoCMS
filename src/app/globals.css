@@ -368,3 +368,33 @@ details.karte[open] > summary::after { content: " ▴"; }
   .aktionen > .aktion { border-bottom: 1px solid var(--linie); }
   .aktionen > .aktion:last-child { border-bottom: none; }
 }
+
+/* --- Kopfzeile -------------------------------------------------------------- */
+
+.kopf {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; flex-wrap: wrap;
+  padding: 4px 0 12px;
+}
+.kopf .marke { text-decoration: none; color: inherit; }
+.kopf-rechts { display: flex; align-items: center; gap: 4px; }
+
+.kopf-link {
+  display: inline-flex; align-items: center;
+  min-height: 44px; padding: 10px 12px;
+  background: none; border: none;
+  color: var(--text-leise); font-size: 14px; font-weight: 600;
+  font-family: inherit; text-decoration: none; cursor: pointer;
+  border-radius: var(--radius);
+}
+.kopf-link:hover { background: var(--flaeche-alt); color: var(--text); }
+
+/* Angaben-Liste (Bezeichnung / Wert) */
+.angaben { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; }
+.angaben dt { color: var(--text-leise); font-size: 14px; }
+.angaben dd { margin: 0; font-size: 15px; }
+
+@media (max-width: 560px) {
+  .angaben { grid-template-columns: 1fr; gap: 2px 0; }
+  .angaben dd { margin-bottom: 10px; }
+}

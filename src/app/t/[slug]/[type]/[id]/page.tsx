@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Editor } from '@/components/Editor'
-import { Marke } from '@/components/Marke'
+import { Kopfzeile } from '@/components/Kopfzeile'
 import { anzeigezustand, ladeEintrag, ladeInhaltstypen } from '@/lib/content'
 import { requireTenant, requireUser } from '@/lib/tenant'
-import { speichereEntwurf, veroeffentliche } from '../actions'
+import { EintragAktionen } from '@/components/EintragAktionen'
+import { archiviere, loescheEintrag, speichereEntwurf, stelleLetzteVersionWiederHer, veroeffentliche } from '../actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +13,7 @@ export default async function EditorSeite({
   params,
 }: { params: Promise<{ slug: string; type: string; id: string }> }) {
   const { slug, type, id } = await params
-  await requireUser()
+  const nutzer = await requireUser()
   const { tenant } = await requireTenant(slug)
 
   const typen = await ladeInhaltstypen(tenant.id)
@@ -26,7 +27,7 @@ export default async function EditorSeite({
 
   return (
     <main className="huelle">
-      <Marke />
+      <Kopfzeile email={nutzer.email} />
       <div className="stapel">
         <div className="stapel-eng">
           <Link href={`/t/${slug}/${type}`} className="leise">← {typ.namePlural}</Link>
@@ -42,6 +43,15 @@ export default async function EditorSeite({
           istLive={zustand === 'live'}
           speichern={speichereEntwurf}
           veroeffentlichen={veroeffentliche}
+        />
+
+        <EintragAktionen
+          tenantSlug={slug} typeKey={type} entryId={eintrag.id}
+          istArchiviert={eintrag.status === 'archived'}
+          hatVersion={Boolean(eintrag.published_version_id)}
+          wiederherstellen={stelleLetzteVersionWiederHer}
+          archivieren={archiviere}
+          loeschen={loescheEintrag}
         />
       </div>
     </main>

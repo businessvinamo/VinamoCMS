@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Marke } from '@/components/Marke'
+import { Kopfzeile } from '@/components/Kopfzeile'
 import { BenutzerListe } from '@/components/BenutzerListe'
 import { createClient } from '@/lib/supabase/server'
 import { isPlatformAdmin, requireUser } from '@/lib/tenant'
@@ -59,7 +59,7 @@ export default async function BenutzerVerwaltung() {
 
   return (
     <main className="huelle">
-      <Marke />
+      <Kopfzeile email={ich.email} />
       <div className="stapel">
         <div className="stapel-eng">
           <Link href="/admin" className="leise">← Mandanten</Link>
