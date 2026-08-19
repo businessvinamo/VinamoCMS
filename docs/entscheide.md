@@ -941,3 +941,67 @@ Website-Bauer hätte es selbst gebaut, und der erste Tippfehler wäre auf einer
 Kundenwebsite aufgefallen. Jetzt steht im Feld ein Objekt mit `url`, `srcset`,
 `alt`, Breite und Höhe, in einem einzigen zusätzlichen Datenbankzugriff für die
 ganze Antwort.
+
+---
+
+## 34 · Zusammengehörende Inhaltstypen gruppieren
+
+Nach Entscheid 33 standen sieben Inhaltstypen als flache Liste nebeneinander,
+und zwei Paare, die zusammengehören, waren durch fremde Einträge getrennt:
+
+```
+Leistungen · Speisekarte · Neuigkeiten · Öffnungszeiten · Team ·
+Karte als Datei · Ferien und besondere Tage
+```
+
+Kevin hat gefragt, ob das Sinn ergibt. Nein — und der Grund steckt in der
+Beziehung der Paare:
+
+**Speisekarte und Karte als PDF sind zwei Wege zur selben Sache.** Der Kunde
+wählt einen. Stehen sie auseinander, übersieht der Wirt, dass es die
+PDF-Variante überhaupt gibt, und tippt drei Stunden lang Gerichte ab.
+
+**Öffnungszeiten und Ferien sind Regel und Ausnahme.** Er braucht beide.
+Stehen sie auseinander, sucht er die Betriebsferien in den Öffnungszeiten.
+
+### Warum keine zusammengelegten Typen
+
+Naheliegend wäre, Speisekarte und PDF in einen Typ zu legen, mit beiden
+Feldern. Das ergäbe eine Maske, in der die Hälfte immer leer bleibt, und die
+Frage „was gilt jetzt, die Gerichte oder das PDF?" wäre nicht mehr
+beantwortbar. Zwei Typen unter einer Überschrift: Die Wahl bleibt sichtbar und
+eindeutig.
+
+Die Gruppe ist **Daten** — eine Spalte `group_label` an `content_types`, kein
+Sonderfall in der Oberfläche. Gleiche Beschriftung, nebeneinander liegend =
+eine Gruppe. NULL heisst „steht für sich", der Normalfall.
+
+### Namen entdoppeln
+
+Eine Gruppe „Speisekarte", die einen Eintrag „Speisekarte" enthält, liest sich
+wie ein Fehler. Die Gruppe trägt jetzt das Thema, die Einträge tragen den Weg:
+
+| vorher | nachher |
+| --- | --- |
+| Speisekarte | **Abschnitte** — „Ein Abschnitt der Karte, z.B. Vorspeisen" |
+| Karte als Datei | **Karte als PDF** |
+| Öffnungszeiten | **Reguläre Zeiten** — „Der wöchentliche Rhythmus" |
+
+Nebenbei wird es korrekter: Was der Kunde unter `menu_section` anlegt, sind
+Abschnitte — Vorspeisen, Hauptgänge —, nicht „die Speisekarte".
+
+### Eine Überschrift reicht nicht
+
+Der erste Versuch hatte nur die Gruppenüberschrift. Im Ergebnis stand
+„Neuigkeiten" — ein Typ ganz ohne Gruppe — direkt unter „SPEISEKARTE" und sah
+aus, als gehöre er dazu. Eine Gruppe braucht einen sichtbaren **Anfang und ein
+sichtbares Ende**; ein Strich am linken Rand sagt, wie weit sie reicht, ohne
+dass jeder einzelne Typ eine eigene Überschrift bräuchte.
+
+### Und die Reihenfolge
+
+Die Positionen waren historisch gewachsen: `row_number()` über den Schlüssel,
+neue Typen mit `10 + n` hinten angehängt. Deshalb stand „Leistungen" zuoberst
+und die Speisekarte an zweiter Stelle. Neu gibt es eine Vorgabereihenfolge
+(`standard_position`), die pro Mandant überschreibbar bleibt — vorn steht, was
+ein Gastrobetrieb täglich braucht.

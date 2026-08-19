@@ -3,11 +3,35 @@ import { Kopfzeile } from '@/components/Kopfzeile'
 import { createClient } from '@/lib/supabase/server'
 import { isPlatformAdmin, listMemberships, requireTenant, requireUser } from '@/lib/tenant'
 import { ladeBearbeitbareInhaltstypen } from '@/lib/content'
+import type { ContentType } from '@/lib/fields'
 
 export const dynamic = 'force-dynamic'
 
 const SPRACHNAMEN: Record<string, string> = {
   de: 'Deutsch', fr: 'Französisch', it: 'Italienisch', en: 'Englisch',
+}
+
+/**
+ * Inhaltstypen zu Gruppen zusammenfassen.
+ *
+ * Die Reihenfolge kommt aus der Liste, nicht aus einer Sortierung hier: Wer die
+ * Positionen im Admin ändert, soll die Übersicht ändern. Eine Gruppe steht dort,
+ * wo ihr erstes Mitglied steht -- damit landet sie nie hinter einem Typ, der
+ * eigentlich nach ihr kommt.
+ *
+ * Typen ohne Gruppe stehen für sich und bekommen keine Überschrift. Zwei
+ * Einträge mit derselben Beschriftung, die nicht nebeneinander liegen, ergeben
+ * bewusst ZWEI Gruppen -- die Reihenfolge gewinnt, sonst würde ein Typ aus der
+ * Mitte der Liste nach oben gerissen.
+ */
+function gruppiere(typen: ContentType[]): { titel: string | null; typen: ContentType[] }[] {
+  const gruppen: { titel: string | null; typen: ContentType[] }[] = []
+  for (const typ of typen) {
+    const letzte = gruppen[gruppen.length - 1]
+    if (typ.groupLabel && letzte?.titel === typ.groupLabel) letzte.typen.push(typ)
+    else gruppen.push({ titel: typ.groupLabel ?? null, typen: [typ] })
+  }
+  return gruppen
 }
 
 /**
@@ -73,26 +97,32 @@ export default async function MandantSeite({
           </div>
         )}
 
-        <div className="stapel-eng">
+        <div className="stapel">
           <h2>Inhalte pflegen</h2>
           {typen.length === 0 ? (
             <p className="leise">
               Für diese Website ist noch kein Inhaltstyp freigeschaltet.
             </p>
           ) : (
-            <ul className="liste">
-              {typen.map((t) => (
-                <li key={t.id}>
-                  <Link href={`/t/${tenant.slug}/${t.key}`} className="karte karte-klick">
-                    <span className="stapel-eng">
-                      <strong>{t.namePlural}</strong>
-                      {t.description && <span className="leise">{t.description}</span>}
-                    </span>
-                    <span aria-hidden="true" className="leise">→</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            gruppiere(typen).map((gruppe) => (
+              <div key={gruppe.titel ?? gruppe.typen[0].id}
+                   className={gruppe.titel ? 'stapel-eng gruppe' : 'stapel-eng'}>
+                {gruppe.titel && <h3 className="gruppentitel">{gruppe.titel}</h3>}
+                <ul className="liste">
+                  {gruppe.typen.map((t) => (
+                    <li key={t.id}>
+                      <Link href={`/t/${tenant.slug}/${t.key}`} className="karte karte-klick">
+                        <span className="stapel-eng">
+                          <strong>{t.namePlural}</strong>
+                          {t.description && <span className="leise">{t.description}</span>}
+                        </span>
+                        <span aria-hidden="true" className="leise">→</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
           )}
         </div>
 

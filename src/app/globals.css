@@ -495,3 +495,28 @@ input[type="file"] {
 .sortierzeile > .karte-klick { flex: 1 1 auto; min-width: 0; }
 .reihenfolge { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
 .reihenfolge > button { min-height: 40px; min-width: 44px; }
+
+/*
+  Gruppenüberschrift in der Inhaltsübersicht.
+
+  Kleiner und leiser als eine echte Zwischenüberschrift: Sie ordnet, sie
+  konkurriert nicht mit den Karten darunter.
+*/
+.gruppentitel {
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-leise);
+}
+
+/*
+  Die Gruppe braucht einen sichtbaren Anfang UND ein sichtbares Ende.
+
+  Mit blosser Überschrift sah der erste ungruppierte Typ darunter so aus, als
+  gehöre er noch dazu: „Neuigkeiten" stand unter „SPEISEKARTE". Der Strich am
+  linken Rand sagt, wie weit die Gruppe reicht -- ohne dass jeder einzelne Typ
+  eine eigene Überschrift bräuchte.
+*/
+.gruppe {
+  border-left: 2px solid var(--linie);
+  padding-left: 14px;
+}

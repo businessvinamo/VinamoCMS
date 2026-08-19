@@ -49,6 +49,11 @@ export type ContentType = {
   supportsSlots: boolean
   supportsScheduling: boolean
   description: string
+  /**
+   * Überschrift, unter der dieser Typ in der Kundenübersicht steht.
+   * null heisst „steht für sich" -- der Normalfall.
+   */
+  groupLabel: string | null
   fields: Field[]
 }
 

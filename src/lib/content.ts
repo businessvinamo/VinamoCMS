@@ -80,6 +80,7 @@ export async function ladeInhaltstypen(tenantId: string): Promise<ContentType[]>
         supportsSlots: t.supports_slots,
         supportsScheduling: t.supports_scheduling,
         description: t.description,
+        groupLabel: t.group_label ?? null,
         fields: oben,
       } satisfies ContentType
     })
