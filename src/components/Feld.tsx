@@ -4,6 +4,7 @@ import type { Field, RepeaterRow } from '@/lib/fields'
 import { neueZeile } from '@/lib/fields'
 import { useState } from 'react'
 import { Dateifeld } from '@/components/Dateifeld'
+import { Preisfeld } from '@/components/Preisfeld'
 
 /**
  * Feldkomponente.
@@ -116,22 +117,7 @@ function eingabe(
     // einer Währung, und ein Kunde in Konstanz soll seine Preise nicht in
     // Franken auszeichnen.
     case 'price':
-      return (
-        <span className="preisfeld">
-          <input
-            {...g}
-            type="text"
-            inputMode="decimal"
-            value={wert === null || wert === undefined ? '' : String(wert)}
-            placeholder="24.50"
-            onChange={(e) => {
-              const roh = e.target.value.trim().replace(',', '.')
-              onChange(roh === '' ? null : Number.isNaN(Number(roh)) ? e.target.value : Number(roh))
-            }}
-          />
-          <span className="leise waehrung">{umgebung.waehrung}</span>
-        </span>
-      )
+      return <Preisfeld {...g} wert={wert} waehrung={umgebung.waehrung} onChange={onChange} />
 
     // Echte Uhrzeit statt Freitext. Der Browser gibt „09:00" zurück, egal was
     // getippt wurde -- vorher stand hier ein Textfeld, in das „X" passte.

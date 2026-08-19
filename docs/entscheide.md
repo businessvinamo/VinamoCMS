@@ -1135,3 +1135,40 @@ Medienfelder als Kennung und baute die Speicheradresse im Beispiel von Hand
 zusammen. Seit die Lese-API fertige Objekte liefert, ist das nicht nur
 überflüssig, sondern falsch — der Speicherpfad ist nichts, worauf sich eine
 Kundenseite verlassen darf. Korrigiert.
+
+---
+
+## 37 · Preis: „10" wird zu „10.00", gespeichert bleibt die Zahl
+
+Ein Preisfeld zeigte genau das, was getippt wurde. Wer „10" eintrug, sah „10" —
+auf einer Speisekarte liest sich das wie ein unfertiger Eintrag.
+
+Formatiert wird jetzt beim **Verlassen** des Feldes, nicht beim Tippen. Wer „1"
+eingibt, um „12.50" zu schreiben, soll nicht nach dem ersten Zeichen „1.00"
+vorfinden und daneben weitertippen.
+
+**Gespeichert wird weiterhin eine Zahl, keine Zeichenkette.** „10.00" ist eine
+Darstellung. Die Lese-API sagt zu, dass `price` eine Zahl ist; jede Website, die
+`price.toFixed(2)` aufruft, bräche an einem Text. Dieselbe Trennung wie bei den
+Wochentagen und beim Team-Bereich (Entscheide 35) — nur andersherum: Dort war
+die Beschriftung fälschlich der Wert, hier wäre der Wert fast die Beschriftung
+geworden.
+
+Nebenbei mitgenommen, weil es beim Prüfen auffiel:
+
+* **„1'250.50" wird gelesen.** Das Schweizer Tausender-Apostroph und Leerzeichen
+  werden überlesen. Ein Wirt tippt das so.
+* **Komma als Dezimaltrennzeichen.** „10,50" sind zehn Franken fünfzig. Die
+  englische Lesart „zehneinhalbtausend" kommt auf einer Karte nicht vor.
+* **Negatives gilt als ungültig**, nicht als gültiger Minusbetrag.
+* **Ungültiges bleibt stehen.** „X" wird nicht zu „0.00" gemacht, sondern
+  unverändert weitergereicht, damit die Prüfung beim Speichern es meldet. Ein
+  stillschweigend geleertes Feld wäre schlimmer als der Vertipper.
+
+Die Regeln liegen als reine Funktionen in `src/lib/preis.ts` und nicht im
+Eingabefeld — dort liessen sie sich nur mit einem Browser prüfen. 18 Testfälle
+in `tests/preis.test.ts`, die ohne Datenbank laufen.
+
+**Nicht geändert: die Währung.** Sie liess sich bereits umstellen — unter
+`/admin/<kennung>`, CHF oder EUR, pro Mandant (Entscheid 32). Sie gehört an den
+Betrieb und nicht an das einzelne Feld: Ein Wirt rechnet in einer Währung.
