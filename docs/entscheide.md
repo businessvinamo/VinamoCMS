@@ -1266,3 +1266,50 @@ Eine Zählabfrage für alle Typen, nicht eine pro Typ — sonst wären es bei zw
 Typen zwanzig Abfragen für eine Seite, die nur Zahlen zeigt. Schlägt das Zählen
 fehl, wird es protokolliert und die Liste erscheint ohne Zahlen: Der Kunde soll
 seine Inhalte auch dann erreichen.
+
+---
+
+## 40 · Halb gruppiert ist unruhiger als gar nicht gruppiert
+
+Rückmeldung zur neuen Übersicht: „Neuigkeiten sind nun mittendrin." Zutreffend —
+und in der alten Darstellung war es nur deshalb nicht aufgefallen, weil der
+Einzug ohnehin für Unruhe sorgte. Sobald die Tafeln sauber untereinander standen,
+sah man den eigentlichen Fehler: zwei beschriftete Gruppen, dazwischen ein
+unbeschrifteter Einzelner.
+
+Das Auge sucht in einer Liste nach dem System. Findet es eines mit Ausnahmen,
+liest es die Ausnahme als Fehler — hier ausgerechnet bei dem Typ, den eine
+Wirtin am häufigsten anfasst.
+
+**Jeder ausgelieferte Inhaltstyp hat jetzt einen Bereich:**
+
+| Bereich | Typen |
+| --- | --- |
+| Speisekarte | Abschnitte · Karte als PDF |
+| Aktuelles | Neuigkeiten |
+| Öffnungszeiten | Reguläre Zeiten · Ferien und besondere Tage |
+| Über den Betrieb | Leistungen · Team |
+
+**Kein „Weitere Inhalte".** Ein Sammelband wäre schneller gewesen, ist aber eine
+Schublade — und Schubladen wachsen. Jeder neue Typ, für den niemand kurz
+nachdenkt, landet dort, bis der Restposten der grösste Bereich ist. Jeder Typ
+bekommt stattdessen einen Bereich, der ihn beschreibt; damit hat auch jeder
+künftige Typ von vornherein ein Zuhause.
+
+**„Aktuelles" über „Neuigkeiten" ist keine Doppelung.** Die Gruppe trägt das
+Thema, der Eintrag die Sache (Entscheid 24). Kommen später Veranstaltungen dazu,
+stehen sie ohne Umbau daneben. Eine Gruppe „Neuigkeiten", die „Neuigkeiten"
+enthält, läse sich dagegen wie ein Fehler — genau deshalb wurden in 0024 die
+Namen entdoppelt.
+
+**Die Reihenfolge bleibt unverändert.** Die Bereiche entstehen dort, wo die Typen
+ohnehin schon standen; kein Eintrag wandert, niemand muss neu suchen.
+
+Bemerkenswert am Ergebnis: **keine Zeile Code.** Eine Migration, drei
+`update`-Anweisungen. Dass sich das Erscheinungsbild der Übersicht über Daten
+statt über Sonderfälle in der Oberfläche steuern lässt, ist genau die Zusage aus
+Entscheid 24 — hier zum ersten Mal eingelöst.
+
+Eine Gruppe mit einem einzigen Mitglied bleibt ausdrücklich erlaubt, und
+`group_label` darf weiterhin NULL sein: Wer einen Typ ohne Bereich anlegt, soll
+das können. Nur ausgeliefert wird kein solcher mehr.
