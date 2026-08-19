@@ -1,5 +1,6 @@
 import 'server-only'
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { after } from 'next/server'
 import { adminClient } from '@/lib/supabase/admin'
 
 /**
@@ -58,6 +59,26 @@ export async function sendeWebhooks(
       })),
     )
     if (einreihen) throw new Error(einreihen.message)
+
+    // Und gleich zustellen -- nach der Antwort, nicht davor.
+    //
+    // Vorher hing die Zustellung allein am Minuten-Job. Beobachtet: Der Job lief
+    // nicht (der Zeitplan des Hosters greift je nach Tarif nur einmal täglich),
+    // und damit kam eine veröffentlichte Änderung NIE auf der Kundenseite an --
+    // ohne Fehlermeldung, weil die Warteschlange geduldig ist.
+    //
+    // `after` läuft, nachdem die Antwort beim Kunden ist: Das Veröffentlichen
+    // bleibt so schnell wie zuvor und wartet nicht auf die Kundenseite. Der
+    // Minuten-Job bleibt als Wiederholung bestehen -- er ist jetzt das
+    // Sicherheitsnetz und nicht mehr der einzige Weg.
+    after(async () => {
+      try {
+        await stelleFaelligeZu(20, tenantId)
+      } catch (fehler) {
+        console.error('[webhooks] Sofortzustellung fehlgeschlagen',
+          fehler instanceof Error ? fehler.message : fehler)
+      }
+    })
   } catch (fehler) {
     // Sichtbar im Serverprotokoll, folgenlos für den Kunden. Bleibt die Meldung
     // stehen, wird die Kundenseite nicht mehr neu gebaut -- das gehört überwacht,
@@ -75,17 +96,28 @@ export async function sendeWebhooks(
  * gebaut wurde. Ohne diese Sichtbarkeit veröffentlicht der Kunde, es passiert
  * nichts, und er ruft an.
  */
-export async function stelleFaelligeZu(limit = 20): Promise<{ zugestellt: number; fehlgeschlagen: number }> {
+export async function stelleFaelligeZu(
+  limit = 20,
+  /**
+   * Nur die Zustellungen eines Mandanten. Gesetzt bei der Sofortzustellung nach
+   * dem Veröffentlichen: Sonst arbeitete der Kunde, der gerade gespeichert hat,
+   * die Warteschlange aller anderen mit ab -- und eine hängende Kundenseite
+   * eines fremden Mandanten würde seine Zustellung ausbremsen. Der Zeitplan-Job
+   * lässt den Filter weg und nimmt weiterhin alles.
+   */
+  tenantId?: string,
+): Promise<{ zugestellt: number; fehlgeschlagen: number }> {
   const admin = adminClient()
 
-  const { data: faellig } = await admin
+  let abfrage = admin
     .from('webhook_deliveries')
     .select('id, attempt, event, payload, webhooks(url, secret)')
     .is('delivered_at', null)
     .lte('next_attempt_at', new Date().toISOString())
     .lt('attempt', MAX_VERSUCHE)
-    .order('next_attempt_at')
-    .limit(limit)
+  if (tenantId) abfrage = abfrage.eq('tenant_id', tenantId)
+
+  const { data: faellig } = await abfrage.order('next_attempt_at').limit(limit)
 
   let zugestellt = 0
   let fehlgeschlagen = 0

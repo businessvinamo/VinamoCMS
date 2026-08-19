@@ -1172,3 +1172,41 @@ in `tests/preis.test.ts`, die ohne Datenbank laufen.
 **Nicht geändert: die Währung.** Sie liess sich bereits umstellen — unter
 `/admin/<kennung>`, CHF oder EUR, pro Mandant (Entscheid 32). Sie gehört an den
 Betrieb und nicht an das einzelne Feld: Ein Wirt rechnet in einer Währung.
+
+---
+
+## 38 · Zustellen darf nicht allein am Zeitplan hängen
+
+Beim Einrichten des ersten echten Webhooks kam die Zustellung nicht an. Nicht
+weil sie scheiterte — sie wurde **nie versucht**: `attempt` blieb bei 0, obwohl
+`next_attempt_at` längst vergangen war.
+
+Die Ursache lag nicht im Code. `/api/cron` antwortet korrekt, `CRON_SECRET` ist
+gesetzt, die Datenbank erreichbar, `/api/diagnose` meldet alles grün. Der
+minütliche Zeitplan des Hosters feuert schlicht nicht in diesem Takt — je nach
+Tarif läuft er nur einmal täglich.
+
+**Der eigentliche Fehler war der Entwurf, nicht der Tarif.** Die einzige
+Verbindung zwischen „veröffentlicht" und „Kundenseite gebaut" war ein Job, der
+ausfallen kann, ohne dass es jemand merkt. Die Warteschlange ist geduldig: Ein
+Eintrag, der nie abgeholt wird, sieht genauso aus wie einer, der gleich abgeholt
+wird. Kein Fehler, keine Meldung, nur eine Website, die alt bleibt.
+
+Neu wird **direkt nach dem Veröffentlichen zugestellt**, über `after()` — also
+nachdem die Antwort beim Kunden ist. Das Veröffentlichen bleibt so schnell wie
+zuvor und wartet nicht darauf, dass die Kundenseite antwortet; genau dafür war
+die Warteschlange ursprünglich da (Entscheid 12), und dieser Grund gilt weiter.
+Der Zeitplan-Job bleibt bestehen, ist aber vom einzigen Weg zum **Sicherheitsnetz
+für Wiederholversuche** geworden.
+
+Nebenbei enger gezogen: Die Sofortzustellung nimmt nur die Zustellungen **des
+eigenen Mandanten**. Sonst arbeitete der Kunde, der gerade gespeichert hat, die
+Warteschlange aller anderen mit ab — und eine hängende Kundenseite eines fremden
+Mandanten (zehn Sekunden Zeitüberschreitung pro Versuch) würde seine eigene
+Zustellung ausbremsen. Der Zeitplan-Job lässt den Filter weg und nimmt weiterhin
+alles.
+
+**Was das über die Prüfung sagt.** Der Webhook-Weg war seit Beginn gebaut und
+nie unter echten Bedingungen gelaufen — es gab bis heute keinen einzigen
+eingetragenen Webhook. Ein Pfad, den niemand je gegangen ist, ist kein
+funktionierender Pfad, egal wie sauber er aussieht.
