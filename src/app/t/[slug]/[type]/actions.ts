@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { ladeInhaltstypen } from '@/lib/content'
+import { saeubereRichtextWerte } from '@/lib/richtext'
 import { pruefeWerte, type FieldValues, type Fehler } from '@/lib/fields'
 import { requireTenant } from '@/lib/tenant'
 import { sendeWebhooks } from '@/lib/webhooks'
@@ -39,10 +40,27 @@ export async function speichereEntwurf(entwurf: Entwurf): Promise<SpeicherErgebn
   const { tenant } = await requireTenant(entwurf.tenantSlug)
   const supabase = await createClient()
 
+  // Richtext säubern, BEVOR er in die Datenbank geht.
+  //
+  // Der Inhalt geht unverändert über die Lese-API auf die Kundenwebsite und
+  // landet dort in dangerouslySetInnerHTML -- anders lässt sich formatierter
+  // Text nicht ausliefern. Ohne diesen Schritt könnte die Aushilfe, die nur
+  // News pflegen darf, ein <script> auf der Firmenwebsite platzieren.
+  const typen = await ladeInhaltstypen(tenant.id)
+  const typ = typen.find((t) => t.key === entwurf.typeKey)
+  const felder = typ?.fields ?? []
+
+  const fieldValues = saeubereRichtextWerte(felder, entwurf.fieldValues)
+  const translations = Object.fromEntries(
+    Object.entries(entwurf.translations).map(([l, v]) => [
+      l, { ...v, field_values: saeubereRichtextWerte(felder, v.field_values) },
+    ]),
+  )
+
   const { error } = await supabase
     .from('entries')
     .update({
-      field_values: entwurf.fieldValues,
+      field_values: fieldValues,
       publish_at: entwurf.publishAt,
       valid_from: entwurf.validFrom,
       valid_until: entwurf.validUntil,
@@ -54,7 +72,7 @@ export async function speichereEntwurf(entwurf: Entwurf): Promise<SpeicherErgebn
 
   if (error) return { ok: false, fehler: [{ pfad: '', meldung: uebersetzeFehler(error.message) }] }
 
-  for (const [locale, inhalt] of Object.entries(entwurf.translations)) {
+  for (const [locale, inhalt] of Object.entries(translations)) {
     if (!tenant.locales.includes(locale)) continue
     const { error: tFehler } = await supabase.from('entry_translations').upsert(
       {

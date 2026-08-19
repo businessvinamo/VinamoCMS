@@ -153,11 +153,15 @@ function eingabe(
                onChange={(e) => onChange(e.target.value || null)} />
       )
 
+    // Der Wert ist der Schlüssel, die Beschriftung nur Anzeige. Ohne diese
+    // Trennung landet deutsches Wortmaterial in der französischen API-Antwort.
     case 'select':
       return (
         <select {...g} value={String(wert ?? '')} onChange={(e) => onChange(e.target.value)}>
           <option value="">Bitte wählen</option>
-          {(feld.config.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
+          {(feld.config.options ?? []).map((o) => (
+            <option key={o} value={o}>{feld.config.option_labels?.[o] ?? o}</option>
+          ))}
         </select>
       )
 
@@ -245,7 +249,7 @@ function Mehrfachauswahl({
             <button key={o} type="button" disabled={g.disabled} aria-pressed={an}
                     className={an ? 'chip chip-an' : 'chip'}
                     onClick={() => umschalten(o)}>
-              {o}
+              {feld.config.option_labels?.[o] ?? o}
             </button>
           )
         })}

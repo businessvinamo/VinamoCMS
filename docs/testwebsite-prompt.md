@@ -67,15 +67,23 @@ Speisekarte steht „Salade mêlée" neben „Suppe des Tages", weil nur das ein
   title, lead, body (HTML), published_on (Datum), image (Bild-Objekt oder
   null), highlight (true/false)
   `highlight` heisst: auf der Startseite hervorheben.
+  `body` ist HTML und wird serverseitig beim Speichern gesäubert — erlaubt sind
+  nur p, br, strong, b, em, i, u, s, ul, ol, li, blockquote, h2–h4 und a, ohne
+  style und ohne class. Du kannst es direkt rendern.
 
 **opening_hours** — die regulären Zeiten, ein Eintrag
   label, note, hours (Array): { _id, day, from ("11:30"), to, closed }
-  `day` ist Montag…Sonntag. Mehrere Zeilen pro Tag (Mittag und Abend) sind der
-  Normalfall. Bei `closed: true` sind from/to null.
+  `day` ist ein sprachneutraler Schlüssel: mon, tue, wed, thu, fri, sat, sun.
+  Die Beschriftung liefert deine Website — in der API steht bewusst kein
+  deutsches Wort, das du übersetzen müsstest.
+  Mehrere Zeilen pro Tag (Mittag und Abend) sind der Normalfall. Bei
+  `closed: true` sind from/to null.
 
 **opening_exceptions** — Ferien und besondere Tage
   label, from (Datum), to (Datum), closed (true/false), note,
-  hours (Array wie oben, für abweichende Zeiten)
+  hours (Array): { _id, from, to } — NUR diese drei Felder, kein day und kein
+  closed. Eine Ausnahme gilt für ihren ganzen Zeitraum; ein Wochentag ergäbe
+  dort keinen Sinn.
   WICHTIG: Diese Einträge sind IMMER sichtbar, auch lange vor ihrem Zeitraum.
   Die Website entscheidet selbst, was sie ankündigt („Vom 2. bis 16. September
   geschlossen") und was sie heute anwendet. Bei einem einzelnen Tag sind from
@@ -88,9 +96,13 @@ Speisekarte steht „Salade mêlée" neben „Suppe des Tages", weil nur das ein
 
 **team** — Team
   name, role, bio, group (Text oder fehlend), photo (Bild-Objekt oder null)
-  Nach `group` gruppieren; wer keine Gruppe hat, kommt zuletzt. Die Reihenfolge
-  innerhalb einer Gruppe ist die aus der API — nicht umsortieren, sie ist im
-  CMS von Hand gesetzt.
+  Nach `group` gruppieren; wer keine Gruppe hat, kommt zuletzt. `group` wird
+  NICHT übersetzt — es ist eine Zuordnung, kein Text für den Gast. In jeder
+  Sprache steht derselbe Wert („Küche"), damit die Gruppierung stabil bleibt.
+  Willst du französische Bereichsnamen, bilde sie auf der Website ab, so wie
+  die Wochentage auch.
+  Die Reihenfolge innerhalb einer Gruppe ist die aus der API — nicht
+  umsortieren, sie ist im CMS von Hand gesetzt.
 
 ## Bild- und Dateifelder
 
@@ -147,6 +159,7 @@ Keine Design-Show, sondern ob die Daten tragen: schlichtes, sauberes Layout,
 lesbar auf dem Handy. Wichtiger ist, dass jeder Sonderfall stimmt — sie sind
 alle in den Testdaten enthalten:
 
+- Wochentage als Schlüssel (mon…sun), nicht als Wörter
 - „Suppe des Tages" ohne Preis
 - Allergen „vegetarisch" und „vegan", die in keiner Standardliste stehen
 - zwei Neuigkeiten ohne Bild
@@ -159,6 +172,8 @@ alle in den Testdaten enthalten:
 - „Herbstmarkt": offen, aber mit abweichenden Zeiten
 - auf Französisch: Desserts gar nicht übersetzt, Hauptgänge nur teilweise —
   der Fallback greift pro Feld und pro Gericht
+- das Team bleibt auf Französisch trotzdem in zwei Bereichen (nicht drei):
+  `group` ist bewusst einsprachig
 
 Bau das, starte es und zeig mir Screenshots der Seiten.
 ````

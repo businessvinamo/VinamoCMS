@@ -17,6 +17,15 @@ export type FieldConfig = {
   options?: string[]
   /** Auswahlliste ist Vorschlag, nicht Zaun: eigene Werte sind erlaubt. */
   creatable?: boolean
+  /**
+   * Anzeigebeschriftung je Auswahlwert.
+   *
+   * Trennt Schlüssel von Beschriftung. Ohne das war der gespeicherte Wert
+   * gleichzeitig das Label -- bei den Wochentagen stand deshalb „Montag" in der
+   * französischen API-Antwort, und die Kundenwebsite musste deutsche Wörter
+   * übersetzen statt Schlüssel abzubilden.
+   */
+  option_labels?: Record<string, string>
   currency?: string
   min?: number
   max?: number

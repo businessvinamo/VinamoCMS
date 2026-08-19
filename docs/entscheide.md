@@ -1005,3 +1005,87 @@ neue Typen mit `10 + n` hinten angehängt. Deshalb stand „Leistungen" zuoberst
 und die Speisekarte an zweiter Stelle. Neu gibt es eine Vorgabereihenfolge
 (`standard_position`), die pro Mandant überschreibbar bleibt — vorn steht, was
 ein Gastrobetrieb täglich braucht.
+
+---
+
+## 35 · Was der Bau der ersten Kundenwebsite zutage förderte
+
+Drei Rückmeldungen aus dem Bau der Testwebsite. Zwei davon zeigen auf denselben
+Fehler, und es ist ein Modellierungsfehler, kein Programmierfehler.
+
+### Schlüssel und Beschriftung waren dasselbe Feld
+
+**Wochentage.** `day` war eine Auswahl mit den Werten „Montag" … „Sonntag". Auf
+der französischen Seite lieferte die API deshalb deutsche Wochentage. Der
+Website-Bauer hat sich richtig entschieden — er behandelt sie als Aufzählung und
+liefert die Sprachlabels selbst —, aber er musste dafür deutsche Wörter als
+Schlüssel benutzen. Neu sind die Werte `mon` … `sun`; was im Editor steht,
+kommt aus `config.option_labels`.
+
+**Team-Bereich.** `group` war ein übersetzbares Freitextfeld und diente
+gleichzeitig als Gruppierungsschlüssel. Sobald jemand nur einen von zwei
+Küchenmitarbeitenden übersetzte, zerfiel die Küche auf der französischen Seite
+in zwei Blöcke: „Cuisine" mit Anna, „Küche" mit Luca. Die Website gruppierte
+genau nach dem gelieferten Wert — wie spezifiziert. Der Fehler lag im Modell,
+das diesen Ausgang unvermeidlich macht, sobald eine Übersetzung fehlt. Und sie
+wird fehlen: Übersetzungen sind ausdrücklich optional, das ist der ganze Sinn
+des Fallbacks.
+
+**Ein Gruppierungsschlüssel gehört nicht übersetzt.** `group` ist jetzt nicht
+mehr übersetzbar. Wer französische Bereichsnamen will, bildet sie auf der
+Website ab — genau wie die Wochentage. Die Alternative wäre ein zweites Feld
+„Bereich (französisch)" gewesen: ein Feld mehr in jeder Maske, das neun von
+zehn Kunden leer lassen.
+
+Der angebotene Ausweg auf Seite der Website — über die deutsche Fassung
+gruppieren und nur das Label aus der Zielsprache nehmen — hätte funktioniert,
+aber einen zusätzlichen Abruf pro Seite gekostet. Für einen Fehler, den das CMS
+gar nicht erst erzeugen sollte, ist das der falsche Ort.
+
+### Meine Beschreibung stimmte nicht mit den Daten überein
+
+Im Prompt stand, die Zeiten einer Ausnahme hätten dieselbe Form wie die
+regulären („Array wie oben"). Tatsächlich haben sie nur `_id`, `from`, `to` --
+kein `day`, kein `closed`, und das zurecht: Eine Ausnahme gilt für ihren ganzen
+Zeitraum, ein Wochentag ergäbe dort keinen Sinn.
+
+Ich hatte die Felddefinition selbst geschrieben und die Beschreibung danach aus
+dem Kopf. Das ist die Sorte Fehler, die nur auffällt, wenn jemand anderes damit
+arbeitet.
+
+### Richtext ging ungesäubert auf die Kundenwebsite
+
+Der Hinweis kam als Nebenbemerkung: Der News-Body wird mit
+`dangerouslySetInnerHTML` gerendert, „vertretbar, weil die Quelle intern ist".
+
+Sie ist es nicht ganz. Die Aushilfe, die ausdrücklich **nur News pflegen darf**,
+hätte über ein `<script>` im Beitrag jede Besucherin der Firmenwebsite erreicht.
+Eine eingegrenzte Berechtigung, mit der sich beliebiges Skript auf der Website
+platzieren lässt, ist keine Eingrenzung — dann wäre Entscheid 31, wo genau diese
+Eingrenzung nachgezogen wurde, an einer Stelle wieder offen.
+
+Richtext wird jetzt **beim Speichern** gesäubert, mit einer schmalen
+Erlaubnisliste: Absätze, Betonung, Listen, Links, Überschriften ab Ebene zwei.
+Kein `style`, keine `class`, kein `<img>` — das Aussehen bestimmt das Template,
+Bilder kommen über Medienfelder. Externe Links bekommen `rel="noopener"`.
+
+Beim Speichern und nicht beim Ausliefern: einmal statt bei jeder Antwort, die
+Lese-API bleibt schnell, und der Kunde sieht im Editor das, was tatsächlich auf
+seiner Website steht.
+
+Mit `sanitize-html` statt selbst gebaut. HTML sicher zu säubern heisst, HTML
+richtig zu parsen; eine Erlaubnisliste aus regulären Ausdrücken ist der
+Klassiker unter den Lücken.
+
+### Was ich NICHT geändert habe
+
+Das **Ankündigungsfenster von 60 Tagen** gehört auf die Website, nicht ins CMS.
+Das CMS liefert die Tatsache „vom 2. bis 16. September geschlossen"; wie lange
+vorher das auf der Startseite steht, ist eine Darstellungsentscheidung. Genau
+deshalb sind Von und Bis bei den Ausnahmen gewöhnliche Datumsfelder und nicht
+die Zeitsteuerung (Entscheid 33).
+
+Dass die Bundesfeier 2027 überhaupt so lange im Voraus dasteht, ist übrigens ein
+Testdaten-Artefakt: Ein wiederkehrender Feiertag müsste jährlich neu erfasst
+werden. Ein „wiederholt sich jährlich" wäre ein sinnvolles Feld — aber erst,
+wenn ein echter Kunde danach fragt.
