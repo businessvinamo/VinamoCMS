@@ -153,6 +153,13 @@ const antwort = await fetch(url, { next: { revalidate: 3600 } })
 Setz KEINE eigene, längere Cache-Dauer davor — die API steuert sie über
 `next_change_at` selbst.
 
+Und eine Falle beim Neubauen: Next behält die geholten Antworten in `.next`
+über Builds hinweg. Ändert sich am CMS die FORM eines Feldes und nicht nur der
+Inhalt, rendert der neue Code die alte Antwort vor — die Seite zeigt dann
+falsche Werte, obwohl der Code stimmt. Nach einer solchen Änderung einmal
+`rm -rf .next` vor dem Build, oder auf Vercel ohne Build-Cache neu ausrollen.
+Bei reinen Inhaltsänderungen ist das nicht nötig.
+
 ## Was ich sehen will
 
 Keine Design-Show, sondern ob die Daten tragen: schlichtes, sauberes Layout,

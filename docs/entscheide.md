@@ -1089,3 +1089,49 @@ Dass die Bundesfeier 2027 überhaupt so lange im Voraus dasteht, ist übrigens e
 Testdaten-Artefakt: Ein wiederkehrender Feiertag müsste jährlich neu erfasst
 werden. Ein „wiederholt sich jährlich" wäre ein sinnvolles Feld — aber erst,
 wenn ein echter Kunde danach fragt.
+
+---
+
+## 36 · Strukturänderungen brauchen einen geleerten Build-Cache
+
+**Rückmeldung aus dem Kundenprojekt.** Nach dem Nachziehen von Entscheid 35
+zeigte die Website weiterhin vier Team-Bereiche und ein „Heute geschlossen", das
+in den Daten nirgends stand — obwohl der Code stimmte. Ursache: Next hatte die
+API-Antworten des vorherigen Builds in `.next/cache` liegen (`revalidate: 3600`)
+und den Prerender daraus bedient. Nach `rm -rf .next` war alles korrekt.
+
+**Das ist kein Fehler — weder bei Next noch bei uns.** Bei Inhaltsänderungen ist
+genau dieses Verhalten gewollt. Der Bruch entsteht nur, wenn sich die *Form*
+eines Feldes ändert: Ein Wert wird zum Schlüssel, ein Feld hört auf übersetzbar
+zu sein. Dann passen alte Antwort und neuer Code nicht mehr zusammen, und der
+Widerspruch fällt niemandem auf, weil beide für sich richtig sind.
+
+**Warum das die API nicht lösen kann.** Naheliegend wäre, eine Schema-Version in
+die Antwort zu legen. Das hilft nicht: Die Antwort, die die Version tragen
+würde, ist ja selbst die gecachte. Man kann einer Antwort nicht ansehen, dass
+sie veraltet ist, wenn man nur sie hat. Ein Versions-Parameter in der Adresse
+(`?v=…`) würde den Cache-Schlüssel ändern und wirken — aber um den zu setzen,
+müsste die Website die neue Version schon kennen. Dasselbe Henne-Ei.
+
+Der Ausweg liegt beim Ausrollen, nicht im Protokoll. Damit ist es **eine
+Aufgabe der Freigabe, nicht der Schnittstelle** — und die richtige Antwort ist
+Dokumentation plus Ankündigung, kein Mechanismus.
+
+**Festgehalten:**
+
+* `docs/einbinden.md` hat einen eigenen Abschnitt dazu, mit den drei konkreten
+  Handgriffen (Vercel ohne Build-Cache, `rm -rf .next`, oder abwarten).
+* Derselbe Abschnitt zeigt jetzt `revalidateTag` im Webhook-Empfänger. Damit
+  ist veröffentlichter Inhalt in Sekunden draussen statt nach bis zu einer
+  Stunde; `revalidate` bleibt nur das Sicherheitsnetz. Am Build-Cache ändert
+  auch das nichts — die beiden Dinge werden gern verwechselt.
+* Strukturänderungen kündigen wir künftig an. Sie sind selten und treffen alle
+  Kundenseiten gleichzeitig; wer sie erfährt, leert einmal den Cache und ist
+  fertig.
+
+**Nebenbefund.** Beim Nachtragen fiel auf, dass der Abschnitt „Bilder" in
+`docs/einbinden.md` noch aus der Zeit vor Entscheid 32 stammte: Er beschrieb
+Medienfelder als Kennung und baute die Speicheradresse im Beispiel von Hand
+zusammen. Seit die Lese-API fertige Objekte liefert, ist das nicht nur
+überflüssig, sondern falsch — der Speicherpfad ist nichts, worauf sich eine
+Kundenseite verlassen darf. Korrigiert.

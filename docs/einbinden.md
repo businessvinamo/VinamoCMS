@@ -171,24 +171,36 @@ Codebasis bedient damit jeden Kunden.
 
 ---
 
-## Bilder
+## Bilder und Dateien
 
-Medienfelder liefern die Kennung des Bildes. Die Varianten stehen im
-Medien-Datensatz und lassen sich als `srcset` verwenden:
+Medienfelder liefern ein **Objekt**, keine Kennung. Die Adressen sind fertig
+zusammengesetzt — bau sie nie selbst aus einer Kennung zusammen, der
+Speicherpfad ist nicht Teil der Zusage:
 
-```html
-<img
-  src="https://<projekt>.supabase.co/storage/v1/object/public/media/<pfad>-800.webp"
-  srcset="…-400.webp 400w, …-800.webp 800w, …-1200.webp 1200w, …-1600.webp 1600w"
-  sizes="(max-width: 700px) 100vw, 700px"
-  alt="…"
-  loading="lazy"
-/>
+```json
+"image": {
+  "id": "…",
+  "url": "https://…/media/…-1600.webp",
+  "srcset": "https://…-400.webp 400w, https://…-800.webp 800w, …",
+  "vorschau_url": "https://…-400.webp",
+  "alt": "Terrasse des Restaurants im Abendlicht",
+  "width": 1600, "height": 900, "mime": "image/webp", "bytes": 4622
+}
 ```
 
-Die Bilder liegen bereits als WebP in vier Breiten vor, EXIF-Daten inklusive
+```html
+<img src={bild.url} srcset={bild.srcset}
+     sizes="(max-width: 700px) 100vw, 700px"
+     alt={bild.alt} width={bild.width} height={bild.height} loading="lazy" />
+```
+
+Bilder liegen als WebP in bis zu vier Breiten vor, EXIF-Daten inklusive
 GPS-Position sind entfernt. Alt-Texte sind übersetzbar und kommen in der
-angefragten Sprache.
+angefragten Sprache — nimm sie, erfinde keine.
+
+Bei einem PDF sind `srcset`, `width` und `height` null. Dort gehört ein Link
+oder eine Einbettung hin, kein `<img>`. Ist nichts gesetzt, ist das ganze Feld
+`null`.
 
 ---
 
@@ -239,6 +251,63 @@ davorschalten**, sonst hebelst du genau diese Mechanik aus.
 
 ---
 
+## Nach einer Strukturänderung: Build-Cache leeren
+
+Beobachtet beim ersten Kundenprojekt. Ändert sich nicht nur der *Inhalt*,
+sondern die *Form* eines Feldes — ein Wert wird zum Schlüssel, ein Feld hört auf
+übersetzbar zu sein —, dann genügt ein Redeploy nicht.
+
+Next legt die Antworten von `fetch` mit `revalidate` in `.next/cache` ab, und
+dieser Ordner überlebt auf Vercel und in den meisten CI-Aufbauten den nächsten
+Build. Der neue Build zieht die alte Antwort und rendert sie mit dem neuen Code
+vor. Ergebnis: Der Code ist richtig, die Seite ist falsch, und nichts im Log
+sagt warum. Konkret gesehen wurden vier Team-Bereiche statt zwei und ein „Heute
+geschlossen", das nirgends in den Daten stand.
+
+Das ist kein Fehler von Next: Bei reinen Inhaltsänderungen ist genau das
+gewünscht. Nur passen bei einer Strukturänderung alte Antwort und neuer Code
+eben nicht mehr zusammen.
+
+**Beim Ausrollen einer Strukturänderung deshalb einmalig:**
+
+* Vercel: „Redeploy" **ohne** „Use existing Build Cache"
+* Eigene CI: `rm -rf .next` vor dem Build, oder den Cache-Schritt aussetzen
+* Lokal: `rm -rf .next && npm run build`
+
+Wer nichts davon tut, wartet die Revalidierungsdauer ab — bei `revalidate: 3600`
+also bis zu eine Stunde. Das ist zulässig, aber während dieser Stunde sieht man
+Zahlen, die es nicht gibt.
+
+**Wir sagen Bescheid.** Strukturänderungen kündigen wir an; sie sind selten und
+betreffen alle Kundenseiten gleichzeitig. Reine Inhaltsänderungen — und das ist
+der Alltag — brauchen nichts davon: Dafür ist der Webhook da.
+
+### Sauberer als Zeit: über Tags neu bauen
+
+Wer den Webhook empfängt, sollte gezielt entwerten statt auf die Stunde zu
+warten:
+
+```ts
+// app/api/vinamo/route.ts
+import { revalidateTag } from 'next/cache'
+
+export async function POST(request: Request) {
+  const koerper = await request.text()
+  const signatur = request.headers.get('x-vinamo-signature') ?? ''
+  if (!pruefeSignatur(koerper, signatur, process.env.VINAMO_WEBHOOK_SECRET!)) {
+    return new Response('Signatur ungültig', { status: 401 })
+  }
+  const { content_type } = JSON.parse(koerper)
+  revalidateTag(`vinamo:${content_type}`)
+  return new Response(null, { status: 204 })
+}
+```
+
+Damit ist der veröffentlichte Inhalt in Sekunden draussen, und `revalidate` ist
+nur noch das Sicherheitsnetz für den Fall, dass ein Webhook nicht ankommt. Am
+Build-Cache ändert auch das nichts — dafür bleibt die Regel oben.
+
+---
 ## Vorschau eines künftigen Zeitpunkts
 
 ```
