@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Kopfzeile } from '@/components/Kopfzeile'
 import { createClient } from '@/lib/supabase/server'
 import { isPlatformAdmin, listMemberships, requireTenant, requireUser } from '@/lib/tenant'
-import { ladeBearbeitbareInhaltstypen } from '@/lib/content'
+import { ladeBearbeitbareInhaltstypen, ladeInhaltsuebersicht, type Typstand } from '@/lib/content'
 import type { ContentType } from '@/lib/fields'
 
 export const dynamic = 'force-dynamic'
@@ -34,6 +34,48 @@ function gruppiere(typen: ContentType[]): { titel: string | null; typen: Content
   return gruppen
 }
 
+function mehrzahl(anzahl: number, einzahl: string, mehrzahl: string) {
+  return `${anzahl} ${anzahl === 1 ? einzahl : mehrzahl}`
+}
+
+/**
+ * Was an einer Zeile rechts steht.
+ *
+ * Nur was der Kunde beantworten können muss, ohne hineinzuklicken: Liegt hier
+ * etwas? Habe ich etwas angefangen und nicht veröffentlicht? Wartet etwas auf
+ * seinen Termin?
+ *
+ * „Auf der Website" statt „live" und „Entwurf" statt „unpublished" -- dieselben
+ * Wörter wie in der Eintragsliste. Zwei Namen für denselben Zustand sind zwei
+ * Zustände, sobald jemand am Telefon danach fragt.
+ */
+function Stand({ stand }: { stand: Typstand }) {
+  if (stand.gesamt === 0) {
+    return <span className="leise">Noch nichts angelegt</span>
+  }
+  return (
+    <>
+      {/*
+        „3 auf der Website" und nicht „3 Einträge auf der Website": Wovon die
+        Rede ist, steht als Titel derselben Zeile daneben. Das Substantiv brach
+        auf dem Handy neben einer Marke in die zweite Zeile um -- für ein Wort,
+        das nichts hinzufügt.
+      */}
+      <span className="leise">
+        {stand.live > 0 ? `${stand.live} auf der Website` : 'Nichts auf der Website'}
+      </span>
+      {stand.entwurf > 0 && (
+        <span className="marke-rolle zustand-entwurf">
+          {mehrzahl(stand.entwurf, 'Entwurf', 'Entwürfe')}
+        </span>
+      )}
+      {stand.wartend > 0 && (
+        <span className="marke-rolle zustand-geplant">{stand.wartend} geplant</span>
+      )}
+    </>
+  )
+}
+
 /**
  * Mandanten-Startseite. Die Seite, auf der der Kunde landet.
  *
@@ -41,16 +83,22 @@ function gruppiere(typen: ContentType[]): { titel: string | null; typen: Content
  * steht darunter, und was ihn nichts angeht, steht gar nicht da:
  *
  *   * Die Funktionsschalter (content_editor, repeaters, …) sind Vinamo-Interna.
- *     Sie standen hier als nackte Schlüssel und sagten dem Kunden nichts.
- *     Verwaltet werden sie ohnehin unter /admin/<kennung>, mit Beschreibung.
  *   * Die Kennung des Mandanten steht in der Lese-API, nicht im Alltag der
  *     Wirtin. Sie bleibt für den Admin sichtbar, weil er sie braucht.
- *   * „Alle Websites" erscheint nur, wenn es mehr als eine gibt. Ein Kunde mit
- *     genau einer Website wird von der Übersicht ohnehin direkt hierher
- *     geleitet -- ein Link zurück auf eine Seite, die er nie sieht, verwirrt.
- *   * Zugänge standen als abgeschnittene Benutzerkennungen da („a4d16212…").
- *     Jetzt stehen dort die E-Mail-Adressen, und den Knopf zum Verwalten sieht
- *     nur, wer das Recht dazu hat.
+ *   * „Alle Websites" erscheint nur, wenn es mehr als eine gibt.
+ *   * Den Knopf zum Verwalten der Zugänge sieht nur, wer das Recht dazu hat.
+ *
+ * ZUR DARSTELLUNG DER INHALTSLISTE
+ * --------------------------------
+ * Vorher war jeder Typ eine eigene Karte, und Gruppen bekamen zusätzlich einen
+ * Strich am linken Rand mit Einzug. Damit hatte die Seite VIER verschiedene
+ * linke Kanten übereinander -- eingerückt, bündig, eingerückt, bündig. Die
+ * Gruppierung war zwar korrekt, sah aber nach Unordnung aus.
+ *
+ * Neu ist eine Gruppe EINE Tafel mit mehreren Zeilen. Die Zugehörigkeit zeigt
+ * der gemeinsame Rahmen, nicht ein Einzug; alle Tafeln beginnen an derselben
+ * Kante. Ein Typ ohne Gruppe ist dieselbe Tafel mit einer Zeile -- kein
+ * Sonderfall in der Darstellung, nur ein kürzerer Inhalt.
  */
 export default async function MandantSeite({
   params,
@@ -72,12 +120,16 @@ export default async function MandantSeite({
       listMemberships(),
     ])
 
+  // Erst hier, weil die Kennungen der Typen vorher nicht feststehen.
+  const uebersicht = await ladeInhaltsuebersicht(tenant.id, typen.map((t) => t.id))
+
   type Konto = { user_id: string; email: string | null }
   const zugaenge = ((konten ?? []) as Konto[])
     .map((k) => ({ id: k.user_id, email: k.email ?? 'unbekannt' }))
     .sort((a, b) => a.email.localeCompare(b.email))
 
   const mehrereWebsites = istAdmin || mitgliedschaften.length > 1
+  const offeneEntwuerfe = [...uebersicht.values()].reduce((s, z) => s + z.entwurf, 0)
 
   return (
     <main className="huelle">
@@ -97,90 +149,128 @@ export default async function MandantSeite({
           </div>
         )}
 
-        <div className="stapel">
-          <h2>Inhalte pflegen</h2>
+        <section className="stapel">
+          <div className="abschnittskopf">
+            <h2>Inhalte pflegen</h2>
+            {offeneEntwuerfe > 0 && (
+              <span className="leise">
+                {mehrzahl(offeneEntwuerfe, 'Entwurf', 'Entwürfe')} noch nicht veröffentlicht
+              </span>
+            )}
+          </div>
+
           {typen.length === 0 ? (
             <p className="leise">
               Für diese Website ist noch kein Inhaltstyp freigeschaltet.
             </p>
           ) : (
             gruppiere(typen).map((gruppe) => (
-              <div key={gruppe.titel ?? gruppe.typen[0].id}
-                   className={gruppe.titel ? 'stapel-eng gruppe' : 'stapel-eng'}>
-                {gruppe.titel && <h3 className="gruppentitel">{gruppe.titel}</h3>}
-                <ul className="liste">
-                  {gruppe.typen.map((t) => (
-                    <li key={t.id}>
-                      <Link href={`/t/${tenant.slug}/${t.key}`} className="karte karte-klick">
-                        <span className="stapel-eng">
-                          <strong>{t.namePlural}</strong>
-                          {t.description && <span className="leise">{t.description}</span>}
-                        </span>
-                        <span aria-hidden="true" className="leise">→</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+              <div className="tafel" key={gruppe.titel ?? gruppe.typen[0].id}>
+                {gruppe.titel && <p className="tafel-band">{gruppe.titel}</p>}
+                {gruppe.typen.map((t) => (
+                  <Link key={t.id} href={`/t/${tenant.slug}/${t.key}`} className="tafel-zeile">
+                    <span className="tafel-text">
+                      <strong>{t.namePlural}</strong>
+                      {t.description && <span className="leise">{t.description}</span>}
+                    </span>
+                    <span className="tafel-rechts">
+                      <Stand stand={uebersicht.get(t.id) ?? {
+                        gesamt: 0, live: 0, entwurf: 0, wartend: 0,
+                      }} />
+                      <span aria-hidden="true" className="tafel-pfeil">→</span>
+                    </span>
+                  </Link>
+                ))}
               </div>
             ))
           )}
-        </div>
+        </section>
 
-        <div className="karte">
-          <h2>Protokoll</h2>
-          <p className="leise">
-            Wer wann was veröffentlicht hat — und ob die Website danach
-            aktualisiert wurde.
-          </p>
-          <Link href={`/t/${tenant.slug}/protokoll`} className="aktion">Protokoll ansehen</Link>
-        </div>
+        <section className="stapel">
+          <h2>Website und Zugang</h2>
 
-        <div className="karte">
-          <h2>Zugänge</h2>
-          <ul className="liste">
-            {zugaenge.map((z) => (
-              <li key={z.id} className="zeile">
-                <span className="umbruch">{z.email}</span>
-                {z.id === nutzer.id && <span className="marke-rolle">Das bist du</span>}
-              </li>
-            ))}
-            {zugaenge.length === 0 && (
-              <li className="leise">Noch niemand freigeschaltet.</li>
+          <div className="tafel">
+            <Link href={`/t/${tenant.slug}/protokoll`} className="tafel-zeile">
+              <span className="tafel-text">
+                <strong>Protokoll</strong>
+                <span className="leise">
+                  Wer wann was veröffentlicht hat — und ob die Website danach
+                  aktualisiert wurde.
+                </span>
+              </span>
+              <span className="tafel-rechts">
+                <span aria-hidden="true" className="tafel-pfeil">→</span>
+              </span>
+            </Link>
+
+            {darfVerwalten === true ? (
+              <Link href={`/t/${tenant.slug}/benutzer`} className="tafel-zeile">
+                <span className="tafel-text">
+                  <strong>Zugänge</strong>
+                  <span className="leise">
+                    {zugaenge.map((z) => z.email).join(', ') || 'Noch niemand freigeschaltet.'}
+                  </span>
+                </span>
+                <span className="tafel-rechts">
+                  <span className="leise">
+                    {mehrzahl(zugaenge.length, 'Person', 'Personen')}
+                  </span>
+                  <span aria-hidden="true" className="tafel-pfeil">→</span>
+                </span>
+              </Link>
+            ) : (
+              <div className="tafel-zeile">
+                <span className="tafel-text">
+                  <strong>Zugänge</strong>
+                  <span className="leise">
+                    {zugaenge.map((z) => z.email).join(', ') || 'Noch niemand freigeschaltet.'}
+                  </span>
+                </span>
+                <span className="tafel-rechts">
+                  <span className="leise">
+                    {mehrzahl(zugaenge.length, 'Person', 'Personen')}
+                  </span>
+                </span>
+              </div>
             )}
-          </ul>
-          {darfVerwalten === true && (
-            <Link href={`/t/${tenant.slug}/benutzer`} className="aktion">Zugänge verwalten</Link>
-          )}
-        </div>
 
-        <div className="karte">
-          <h2>Sprachen</h2>
-          <ul className="liste">
-            {tenant.locales.map((l) => (
-              <li key={l} className="zeile">
-                <span>{SPRACHNAMEN[l] ?? l}</span>
-                {l === tenant.default_locale && (
-                  <span className="marke-rolle">Hauptsprache</span>
-                )}
-              </li>
-            ))}
-          </ul>
-          <p className="leise">
-            Fehlt eine Übersetzung, zeigt die Website automatisch die Hauptsprache.
-          </p>
-        </div>
+            <div className="tafel-zeile">
+              <span className="tafel-text">
+                <strong>Sprachen</strong>
+                <span className="leise">
+                  Fehlt eine Übersetzung, zeigt die Website automatisch die Hauptsprache.
+                </span>
+              </span>
+              <span className="tafel-rechts">
+                <span className="leise">
+                  {tenant.locales.map((l) => SPRACHNAMEN[l] ?? l).join(', ')}
+                </span>
+                <span className="marke-rolle">
+                  {SPRACHNAMEN[tenant.default_locale] ?? tenant.default_locale} zuerst
+                </span>
+              </span>
+            </div>
+          </div>
+        </section>
 
         {istAdmin && (
-          <div className="karte">
-            <h2>Verwaltung</h2>
-            <p className="leise">
-              Inhaltstypen freischalten, Funktionen ein- und ausschalten,
-              Website stilllegen. Nur du siehst diese Karte.
-            </p>
-            <Link href={`/admin/${tenant.slug}`} className="aktion">
-              Im Admin verwalten
-            </Link>
-          </div>
+          <section className="stapel">
+            <h2>Nur für Vinamo</h2>
+            <div className="tafel">
+              <Link href={`/admin/${tenant.slug}`} className="tafel-zeile">
+                <span className="tafel-text">
+                  <strong>Im Admin verwalten</strong>
+                  <span className="leise">
+                    Inhaltstypen freischalten, Funktionen ein- und ausschalten,
+                    Website stilllegen. Nur du siehst diesen Bereich.
+                  </span>
+                </span>
+                <span className="tafel-rechts">
+                  <span aria-hidden="true" className="tafel-pfeil">→</span>
+                </span>
+              </Link>
+            </div>
+          </section>
         )}
       </div>
     </main>

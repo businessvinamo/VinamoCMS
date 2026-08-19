@@ -1210,3 +1210,59 @@ alles.
 nie unter echten Bedingungen gelaufen — es gab bis heute keinen einzigen
 eingetragenen Webhook. Ein Pfad, den niemand je gegangen ist, ist kein
 funktionierender Pfad, egal wie sauber er aussieht.
+
+---
+
+## 39 · Die Übersicht sagt jetzt, was drin ist
+
+Rückmeldung mit Screenshot: „unübersichtlich". Bei sieben Einträgen ist das kein
+Mengenproblem, also lag es an der Form. Drei Befunde:
+
+**Vier linke Kanten.** Gruppen bekamen einen Strich am Rand mit Einzug, alles
+andere stand bündig. Übereinander ergab das eingerückt – bündig – eingerückt –
+bündig – bündig. Die Gruppierung war korrekt und sah trotzdem nach Unordnung
+aus. Gemessen im Browser: fünf Karten, zwei verschiedene Kanten. Jetzt: eine.
+
+**Umgekehrte Rangfolge.** „SPEISEKARTE" — das Übergeordnete — war klein und
+grau, „Abschnitte" darunter fett und dunkel. Das Kind schrie, der Elternteil
+flüsterte.
+
+**Keine Auskunft.** Jede Zeile sagte nur, wie die Ablage heisst. Ob etwas drin
+liegt, ob der Kunde etwas angefangen und nie veröffentlicht hat — beides erst
+nach dem Hineinklicken. Sieben Klicks für die Frage „habe ich etwas vergessen".
+
+### Was daraus wurde
+
+Eine Gruppe ist neu EINE Tafel mit mehreren Zeilen. Die Zugehörigkeit zeigt der
+gemeinsame Rahmen statt eines Einzugs, der Gruppenname sitzt als Band INNEN.
+Damit beginnt jede Tafel an derselben Kante, und ein Typ ohne Gruppe ist
+dieselbe Tafel mit einer Zeile — kein Sonderfall in der Darstellung.
+
+Rechts steht jetzt der Stand: wie viel auf der Website ist, wie viele Entwürfe
+offen sind, was auf seinen Termin wartet. Über der Liste die Summe, wenn etwas
+offen ist. Dieselben Wörter wie in der Eintragsliste („auf der Website",
+„Entwurf") — zwei Namen für denselben Zustand sind zwei Zustände, sobald jemand
+am Telefon danach fragt.
+
+### Was ich bewusst NICHT anzeige
+
+**„Zuletzt geändert".** Naheliegend und unehrlich: `updated_at` wird auch von
+Migrationen hochgesetzt, die Daten umformen. Nach 0025 stünde an drei Typen ein
+Änderungsdatum, an dem niemand etwas geändert hat. Eine Zahl, die manchmal lügt,
+ist schlechter als keine.
+
+### Beim Prüfen selbst gefunden
+
+Die neue Fassung im Browser gerendert und gemessen, nicht nur behauptet:
+
+* Auf dem Handy stand bei „Protokoll" der Pfeil allein in einer leeren Zeile —
+  die Regel für den Umbruch traf auch Zeilen, die rechts gar nichts zu sagen
+  haben. Mit `:has()` auf die eingegrenzt, die etwas anzuzeigen haben.
+* „3 Einträge auf der Website" brach neben einer Marke um. Das Substantiv steht
+  ohnehin als Titel derselben Zeile daneben, also weg damit: „3 auf der
+  Website".
+
+Eine Zählabfrage für alle Typen, nicht eine pro Typ — sonst wären es bei zwanzig
+Typen zwanzig Abfragen für eine Seite, die nur Zahlen zeigt. Schlägt das Zählen
+fehl, wird es protokolliert und die Liste erscheint ohne Zahlen: Der Kunde soll
+seine Inhalte auch dann erreichen.

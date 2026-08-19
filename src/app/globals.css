@@ -497,26 +497,88 @@ input[type="file"] {
 .reihenfolge > button { min-height: 40px; min-width: 44px; }
 
 /*
-  Gruppenüberschrift in der Inhaltsübersicht.
+  TAFEL -- die Liste, aus der die Übersicht besteht.
 
-  Kleiner und leiser als eine echte Zwischenüberschrift: Sie ordnet, sie
-  konkurriert nicht mit den Karten darunter.
+  Vorher war jeder Inhaltstyp eine eigene Karte, und eine Gruppe bekam
+  zusätzlich einen Strich am linken Rand mit Einzug. Beobachtet im Screenshot:
+  Die Seite hatte dadurch VIER verschiedene linke Kanten übereinander --
+  eingerückt (Speisekarte), bündig (Neuigkeiten), eingerückt (Öffnungszeiten),
+  bündig (Leistungen). Inhaltlich richtig, im Auge Unordnung.
+
+  Eine Tafel fasst zusammen, was zusammengehört: EIN Rahmen, mehrere Zeilen,
+  Trennlinien dazwischen. Die Zugehörigkeit zeigt der gemeinsame Rahmen statt
+  eines Einzugs, und damit beginnt jede Tafel an derselben Kante. Ein Typ ohne
+  Gruppe ist dieselbe Tafel mit einer einzigen Zeile -- kein Sonderfall.
 */
-.gruppentitel {
+.tafel {
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  /* Damit die Zeilen die Rundung nicht an den Ecken überstehen. */
+  overflow: hidden;
+}
+.tafel > * + * { border-top: 1px solid var(--linie); }
+
+/*
+  Das Band trägt den Gruppennamen und sitzt IM Rahmen.
+
+  Vorher stand die Überschrift über den Karten und damit im Niemandsland
+  zwischen zwei Gruppen. Innen liegend ist sie eindeutig: Sie beschriftet, was
+  unter ihr im selben Rahmen steht, und nichts sonst.
+*/
+.tafel-band {
+  margin: 0;
+  padding: 10px 20px;
+  background: var(--flaeche-alt);
   font-size: 13px; font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--text-leise);
 }
 
-/*
-  Die Gruppe braucht einen sichtbaren Anfang UND ein sichtbares Ende.
+.tafel-zeile {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 6px 16px;
+  padding: 14px 20px;
+  min-height: var(--touch);
+  text-decoration: none; color: inherit;
+}
+/* Der Textblock darf schrumpfen; unter 220px bricht die rechte Seite um. */
+.tafel-text {
+  flex: 1 1 220px; min-width: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.tafel-rechts {
+  flex: 0 0 auto; margin-left: auto;
+  display: flex; align-items: center; gap: 10px;
+}
+.tafel-pfeil { color: var(--text-leise); }
 
-  Mit blosser Überschrift sah der erste ungruppierte Typ darunter so aus, als
-  gehöre er noch dazu: „Neuigkeiten" stand unter „SPEISEKARTE". Der Strich am
-  linken Rand sagt, wie weit die Gruppe reicht -- ohne dass jeder einzelne Typ
-  eine eigene Überschrift bräuchte.
+a.tafel-zeile:hover { background: var(--flaeche-alt); }
+a.tafel-zeile:hover .tafel-pfeil { color: var(--violett); }
+
+/*
+  Umgebrochen gehört der Zustand unter den Titel, nicht an den rechten Rand:
+  Sonst steht auf dem Handy „3 Einträge auf der Website" allein rechts unten und
+  liest sich wie eine Fusszeile der ganzen Tafel statt wie Angabe zu DIESER
+  Zeile.
 */
-.gruppe {
-  border-left: 2px solid var(--linie);
-  padding-left: 14px;
+@media (max-width: 560px) {
+  /*
+    :has() grenzt es auf Zeilen ein, die rechts wirklich etwas zu sagen haben.
+    Ohne diese Eingrenzung bekam auch eine Zeile mit BLOSSEM Pfeil eine eigene
+    Zeile -- beobachtet bei „Protokoll": Der Pfeil stand allein unter dem Text,
+    links daneben nichts.
+
+    Kennt ein Browser :has() nicht, entfällt die Regel und die rechte Seite
+    bleibt neben dem Text -- die Darstellung von vorher, nicht ein Fehler.
+  */
+  .tafel-rechts:has(> :not(.tafel-pfeil)) { margin-left: 0; width: 100%; }
+  .tafel-rechts:has(> :not(.tafel-pfeil)) .tafel-pfeil { margin-left: auto; }
+}
+
+/* Überschrift und Nebenangabe auf einer Linie, mit Umbruch auf schmal. */
+.abschnittskopf {
+  display: flex; flex-wrap: wrap;
+  align-items: baseline; justify-content: space-between;
+  gap: 4px 12px;
 }

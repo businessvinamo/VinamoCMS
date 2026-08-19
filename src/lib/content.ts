@@ -203,3 +203,66 @@ export const ZUSTAND_TEXT: Record<Anzeigezustand, string> = {
   noch_nicht_gueltig: 'Noch nicht gültig',
   archiviert: 'Archiviert',
 }
+
+/**
+ * Wie viele Einträge ein Inhaltstyp hat und in welchem Zustand.
+ *
+ * WARUM DIE ÜBERSICHT DAS BRAUCHT
+ * -------------------------------
+ * Ohne diese Zahlen sagt die Startseite dem Kunden nur, WIE die Ablagen heissen.
+ * Ob in einer etwas liegt, ob er etwas angelegt und nie veröffentlicht hat --
+ * beides sieht man erst nach dem Hineinklicken. Bei sieben Typen sind das sieben
+ * Klicks für die Frage „habe ich etwas vergessen".
+ *
+ * WARUM NICHT „ZULETZT GEÄNDERT"
+ * ------------------------------
+ * Naheliegend, aber unehrlich: `updated_at` wird auch von Migrationen
+ * hochgesetzt, die Daten umformen. Nach 0025 stünde an drei Typen ein
+ * Änderungsdatum, an dem niemand etwas geändert hat. Eine Zahl, die manchmal
+ * lügt, ist schlechter als keine.
+ *
+ * EINE Abfrage für alle Typen. Sieben einzelne Zählabfragen wären der klassische
+ * N+1 -- bei einem Mandanten mit zwanzig Typen zwanzig Abfragen für eine Seite,
+ * die nur Zahlen anzeigt.
+ */
+export type Typstand = { gesamt: number; live: number; entwurf: number; wartend: number }
+
+export async function ladeInhaltsuebersicht(
+  tenantId: string,
+  typIds: string[],
+): Promise<Map<string, Typstand>> {
+  const stand = new Map<string, Typstand>()
+  for (const id of typIds) stand.set(id, { gesamt: 0, live: 0, entwurf: 0, wartend: 0 })
+  if (typIds.length === 0) return stand
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('entries')
+    .select('content_type_id, status, published_version_id, publish_at, valid_from, valid_until')
+    .eq('tenant_id', tenantId)
+    .in('content_type_id', typIds)
+
+  // Die Übersicht darf an einer Zahl nicht scheitern: Der Kunde soll seine
+  // Inhalte auch dann erreichen, wenn das Zählen fehlschlägt.
+  if (error) {
+    console.error('[uebersicht] Zählen fehlgeschlagen', error.message)
+    return stand
+  }
+
+  const jetzt = new Date()
+  for (const roh of data ?? []) {
+    const eintrag = roh as unknown as Eintrag & { content_type_id: string }
+    const zahlen = stand.get(eintrag.content_type_id)
+    if (!zahlen) continue
+
+    const zustand = anzeigezustand(eintrag, jetzt)
+    if (zustand === 'archiviert') continue
+
+    zahlen.gesamt++
+    if (zustand === 'live') zahlen.live++
+    else if (zustand === 'entwurf') zahlen.entwurf++
+    else zahlen.wartend++
+  }
+
+  return stand
+}
